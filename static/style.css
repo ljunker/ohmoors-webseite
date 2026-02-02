@@ -273,6 +273,27 @@ tr:last-child td {
   border-bottom: none;
 }
 
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-right: 8px;
+}
+
+.badge.cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+tr.is-cancelled td {
+  color: #991b1b;
+}
+
 @media (max-width: 720px) {
   .nav-inner {
     flex-direction: column;

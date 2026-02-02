@@ -50,7 +50,16 @@ def render(events, nav_html):
         date = html.escape(format_date_de(start_local))
         time = html.escape(start_local.strftime("%H:%M"))
         end_time = html.escape(end_local.strftime("%H:%M"))
-        details = html.escape(e.get("details", ""))
+        raw_details = e.get("details", "")
+        is_cancelled = "abgesagt" in raw_details.lower()
+        if is_cancelled:
+            cleaned = raw_details.replace("abgesagt", "").replace("Abgesagt", "")
+            cleaned = " ".join(cleaned.replace("-", " ").split()).strip()
+            if not cleaned:
+                cleaned = "Clubabend"
+            details = f"<span class=\"badge cancelled\">Abgesagt</span> {html.escape(cleaned)}"
+        else:
+            details = html.escape(raw_details)
         raw_location = e.get("location", "")
         if raw_location:
             location_parts = [html.escape(p.strip()) for p in raw_location.split(",")]
@@ -59,8 +68,9 @@ def render(events, nav_html):
             location = ""
         caller = html.escape(e.get("caller", ""))
         date_line = f"{date} | {time}-{end_time}"
+        row_class = " class=\"is-cancelled\"" if is_cancelled else ""
         rows.append(
-            "        <tr>\n"
+            f"        <tr{row_class}>\n"
             f"          <td data-label=\"Datum & Zeit\">{html.escape(date_line)}</td>\n"
             f"          <td data-label=\"Details\">{details}</td>\n"
             f"          <td data-label=\"Ort\">{location}</td>\n"
