@@ -1,11 +1,13 @@
 import html
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 
 LOCAL_TZ = ZoneInfo("Europe/Berlin")
+ACTIVE_CLASS = "active"
 MONTHS_DE = [
     "Jan.",
     "Feb.",
@@ -32,6 +34,27 @@ def parse_dt(date_str, time_str):
 
 def format_date_de(dt):
     return f"{dt.day}. {MONTHS_DE[dt.month - 1]} {dt.year}"
+
+
+def mark_active(nav_html, page_name):
+    pattern = re.compile(rf"<a([^>]*?)href=[\"']{re.escape(page_name)}[\"']([^>]*)>")
+
+    def repl(match):
+        attrs_before = match.group(1)
+        attrs_after = match.group(2)
+        full_attrs = f"{attrs_before}{attrs_after}"
+        if "data-skip-active" in full_attrs:
+            return match.group(0)
+        if "class=" in full_attrs:
+            return re.sub(
+                r"class=[\"']([^\"']*)[\"']",
+                lambda m: f'class="{m.group(1)} {ACTIVE_CLASS}"',
+                match.group(0),
+                count=1,
+            )
+        return f"<a{attrs_before}href=\"{page_name}\" class=\"{ACTIVE_CLASS}\"{attrs_after}>"
+
+    return pattern.sub(repl, nav_html)
 
 
 def load_events(path):
@@ -107,7 +130,7 @@ def render(events, nav_html):
         f"    <title>{html.escape(title)}</title>\n"
         "  </head>\n"
         "  <body>\n"
-        f"{nav_html}"
+        f"{mark_active(nav_html, 'schedule.html')}"
         "    <main class=\"container page\">\n"
         f"      <h1>{html.escape(title)}</h1>\n"
         "      <p class=\"muted\">Alle Termine sind in lokaler Zeit (CET/CEST).</p>\n"

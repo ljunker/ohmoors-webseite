@@ -1,8 +1,31 @@
+import re
 import sys
 from pathlib import Path
 
 
 INCLUDE_TOKEN = "{{ include: nav.html }}"
+ACTIVE_CLASS = "active"
+
+
+def mark_active(nav_html, page_name):
+    pattern = re.compile(rf"<a([^>]*?)href=[\"']{re.escape(page_name)}[\"']([^>]*)>")
+
+    def repl(match):
+        attrs_before = match.group(1)
+        attrs_after = match.group(2)
+        full_attrs = f"{attrs_before}{attrs_after}"
+        if "data-skip-active" in full_attrs:
+            return match.group(0)
+        if "class=" in full_attrs:
+            return re.sub(
+                r"class=[\"']([^\"']*)[\"']",
+                lambda m: f'class="{m.group(1)} {ACTIVE_CLASS}"',
+                match.group(0),
+                count=1,
+            )
+        return f"<a{attrs_before}href=\"{page_name}\" class=\"{ACTIVE_CLASS}\"{attrs_after}>"
+
+    return pattern.sub(repl, nav_html)
 
 
 def main(argv):
@@ -20,7 +43,7 @@ def main(argv):
             continue
         html = page.read_text(encoding="utf-8")
         if INCLUDE_TOKEN in html:
-            html = html.replace(INCLUDE_TOKEN, nav_html)
+            html = html.replace(INCLUDE_TOKEN, mark_active(nav_html, page.name))
         (site_dir / page.name).write_text(html, encoding="utf-8")
 
 

@@ -150,6 +150,16 @@ a {
   color: var(--text);
 }
 
+.nav-links a.active {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.subnav a.active {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
 .hero {
   padding: 96px 0 64px;
 }
@@ -241,6 +251,36 @@ h1 {
   margin: 8px 0 0;
   font-weight: 600;
   color: var(--text);
+}
+
+.news-list {
+  display: grid;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.news-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.news-card h2 {
+  margin: 8px 0 8px;
+  font-size: 20px;
+}
+
+.news-meta {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.news-actions {
+  margin-top: 14px;
 }
 
 table {
