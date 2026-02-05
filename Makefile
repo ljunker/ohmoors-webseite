@@ -11,6 +11,12 @@ all: build
 
 build: copy_static build_pages $(SCHEDULE_HTML)
 
+jesus: clean build
+
+love: build serve
+
+it_so: clean_all build serve
+
 copy_static:
 	@mkdir -p $(SITE_DIR)
 	@cp -a $(STATIC_DIR)/. $(SITE_DIR)/
@@ -24,10 +30,13 @@ $(EVENTS_JSON): $(EVENTS_PY)
 
 clean:
 	@rm -rf $(SITE_DIR)
+
+clean_all: clean
 	@rm $(EVENTS_JSON)
 
 serve: build
 	@$(PYTHON) -m http.server -d $(SITE_DIR)
+
 build_pages: $(STATIC_DIR)/*.html $(STATIC_DIR)/nav.html build_pages.py
 	@mkdir -p $(SITE_DIR)
 	@$(PYTHON) build_pages.py $(STATIC_DIR) $(SITE_DIR)
