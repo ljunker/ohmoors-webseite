@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 480 360">
-  <rect width="480" height="360" fill="#eef2ff"/>
-  <circle cx="240" cy="140" r="60" fill="#c7d2fe"/>
-  <rect x="120" y="220" width="240" height="90" rx="36" fill="#a5b4fc"/>
-  <text x="240" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#4338ca">President</text>
-</svg>

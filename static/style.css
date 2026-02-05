@@ -230,16 +230,42 @@ h1 {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 18px;
+  padding: 16px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
   text-align: center;
+  max-height: 500px;
 }
 
 .board-card img {
+  display: block;
   width: 100%;
   height: auto;
+  max-height: 300px;
+  margin: 0;
+}
+
+.card-image {
   border-radius: 12px;
-  margin-bottom: 12px;
+  overflow: hidden;
+  margin: 0 0 12px;
+  background: #f3f4f6;
+}
+
+.callers-grid {
+  display: flex;
+  justify-content: center;
+}
+
+.callers-grid .board-card {
+  width: fit-content;
+  max-width: 360px;
+}
+
+.callers-grid .card-image img {
+  width: auto;
+  max-width: 360px;
+  max-height: 260px;
+  height: auto;
 }
 
 .board-card h2 {
@@ -434,5 +460,20 @@ tr.is-cancelled td {
     box-shadow: none;
     border-radius: 0;
     overflow: visible;
+  }
+
+  .board-grid:not(.callers-grid) .card-image img {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    max-height: none;
+  }
+
+  .board-grid:not(.callers-grid) .card-image {
+    background: transparent;
+  }
+
+  .board-card {
+    max-height: none;
   }
 }

@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 480 360">
-  <rect width="480" height="360" fill="#f0fdf4"/>
-  <circle cx="240" cy="140" r="60" fill="#86efac"/>
-  <rect x="120" y="220" width="240" height="90" rx="36" fill="#4ade80"/>
-  <text x="240" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#15803d">Treasurer</text>
-</svg>
