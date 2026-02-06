@@ -1,0 +1,6 @@
+# Install with root crontab if DEPLOY_DIR points to /etc or another root-owned path.
+# This job only refreshes events.json in the deployed site root.
+# Example:
+#   sudo crontab -e
+# Then add:
+15 2 * * * DEPLOY_DIR=/var/www/ohmoors.de/html RELOAD_NGINX=1 /Users/lj/website/scripts/nightly_update.sh >> /var/log/ohmoors-nightly.log 2>&1

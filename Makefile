@@ -2,14 +2,15 @@ SITE_DIR := _site
 STATIC_DIR := static
 EVENTS_JSON := events.json
 EVENTS_PY := events.py
-SCHEDULE_HTML := $(SITE_DIR)/schedule.html
 PYTHON := python3
+DEPLOY_DIR ?= /etc/nginx/sites-available/ohmoors
+NIGHTLY_SCRIPT := scripts/nightly_update.sh
 
-.PHONY: all build copy_static clean serve
+.PHONY: all build copy_static copy_events_json clean serve deploy nightly update_events
 
 all: build
 
-build: copy_static build_pages $(SCHEDULE_HTML)
+build: copy_static copy_events_json build_pages
 
 jesus: clean build
 
@@ -21,9 +22,12 @@ copy_static:
 	@mkdir -p $(SITE_DIR)
 	@cp -a $(STATIC_DIR)/. $(SITE_DIR)/
 
-$(SCHEDULE_HTML): $(EVENTS_JSON) $(STATIC_DIR)/nav.html generate_schedule.py
+copy_events_json: $(EVENTS_JSON)
 	@mkdir -p $(SITE_DIR)
-	@$(PYTHON) generate_schedule.py $(EVENTS_JSON) $(STATIC_DIR)/nav.html $(SCHEDULE_HTML)
+	@cp $(EVENTS_JSON) $(SITE_DIR)/$(EVENTS_JSON)
+
+update_events:
+	@$(PYTHON) $(EVENTS_PY)
 
 $(EVENTS_JSON): $(EVENTS_PY)
 	@$(PYTHON) $(EVENTS_PY)
@@ -40,3 +44,9 @@ serve: build
 build_pages: $(STATIC_DIR)/*.html $(STATIC_DIR)/nav.html build_pages.py
 	@mkdir -p $(SITE_DIR)
 	@$(PYTHON) build_pages.py $(STATIC_DIR) $(SITE_DIR)
+
+deploy: build
+	@rsync -a --delete $(SITE_DIR)/ $(DEPLOY_DIR)/
+
+nightly:
+	@bash $(NIGHTLY_SCRIPT)
