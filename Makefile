@@ -3,7 +3,7 @@ STATIC_DIR := static
 EVENTS_JSON := events.json
 EVENTS_PY := events.py
 PYTHON := python3
-DEPLOY_DIR ?= /etc/nginx/sites-available/ohmoors
+DEPLOY_DIR ?= /var/www/ohmoors.de/html
 NIGHTLY_SCRIPT := scripts/nightly_update.sh
 
 .PHONY: all build copy_static copy_events_json clean serve deploy nightly update_events
@@ -46,7 +46,7 @@ build_pages: $(STATIC_DIR)/*.html $(STATIC_DIR)/nav.html build_pages.py
 	@$(PYTHON) build_pages.py $(STATIC_DIR) $(SITE_DIR)
 
 deploy: build
-	@rsync -a --delete $(SITE_DIR)/ $(DEPLOY_DIR)/
+	@sudo rsync -avh --delete $(SITE_DIR)/ $(DEPLOY_DIR)/
 
 nightly:
 	@bash $(NIGHTLY_SCRIPT)

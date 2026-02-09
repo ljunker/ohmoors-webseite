@@ -1,0 +1,19 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ohmoor-squeezers.de www.ohmoor-squeezers.de;
+
+    root /var/www/ohmoors.de/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # schedule.html loads events.json directly; keep it uncached for fresh updates.
+    location = /events.json {
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate";
+        expires -1;
+        try_files $uri =404;
+    }
+}
