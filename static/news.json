@@ -1,10 +1,10 @@
 [
   {
     "title": "Rosenmontagsdance",
-    "flyer_label": "Flyer (PDF)",
     "date": "16. Feb. 2026",
     "text": "Am 16. Februar findet bei uns der Rosenmontagsdance statt. Kommt gerne verkleidet!",
-    "flyer_url": "2026-Rosenmontag.pdf"
+    "flyer_url": "2026-Rosenmontag.pdf",
+    "flyer_label": "Flyer (PDF)"
   },
   {
     "title": "Schnupperabend für Einsteiger",
