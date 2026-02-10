@@ -11,6 +11,7 @@ make serve           # startet lokalen Server auf _site
 ```
 
 `schedule.html` liest Termine clientseitig aus `events.json` (im Site-Root).
+`news.html` liest News clientseitig aus `news.json` (im Site-Root).
 
 ## Server-Update nur fuer Events
 

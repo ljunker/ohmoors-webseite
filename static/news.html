@@ -15,25 +15,86 @@
     <main class="container page">
       <h1>Aktuelles</h1>
       <p class="muted">Neuigkeiten und Ankündigungen.</p>
-      <section class="news-list">
-        <article class="news-card">
-          <div class="news-meta">16. Feb. 2026</div>
-          <h2>Rosenmontagsdance</h2>
-          <p>Am 16. Februar findet bei uns der Rosenmontagsdance statt. Kommt gerne verkleidet!</p>
-          <div class="news-actions">
-            <a class="button" href="2026-Rosenmontag.pdf" target="_blank" rel="noopener noreferrer">Flyer (PDF)</a>
-          </div>
-        </article>
-        <article class="news-card">
-          <div class="news-meta">September 2026</div>
-          <h2>Schnupperabend für Einsteiger</h2>
-          <p>Wir planen einen offenen Abend für alle, die Square Dance ausprobieren möchten.</p>
-          <div class="news-actions">
-            <span class="muted">Flyer folgt</span>
-          </div>
-        </article>
-      </section>
+      <p id="news-status" class="muted">News werden geladen...</p>
+      <section id="news-list" class="news-list"></section>
     </main>
+    <script>
+      (function () {
+        var statusEl = document.getElementById("news-status");
+        var listEl = document.getElementById("news-list");
+
+        function escapeHtml(value) {
+          return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        }
+
+        function render(newsItems) {
+          if (!newsItems.length) {
+            statusEl.textContent = "";
+            listEl.innerHTML = "<p>Keine News vorhanden.</p>";
+            return;
+          }
+
+          listEl.innerHTML = newsItems
+            .map(function (item) {
+              var date = escapeHtml(item.date || "");
+              var title = escapeHtml(item.title || "");
+              var text = escapeHtml(item.text || "");
+              var flyerUrl = String(item.flyer_url || "").trim();
+              var flyerLabel = escapeHtml(item.flyer_label || "Flyer (PDF)");
+              var flyerText = escapeHtml(item.flyer_text || "Flyer folgt");
+              var actionHtml = flyerUrl
+                ? '<a class="button" href="' +
+                  escapeHtml(flyerUrl) +
+                  '" target="_blank" rel="noopener noreferrer">' +
+                  flyerLabel +
+                  "</a>"
+                : '<span class="muted">' + flyerText + "</span>";
+
+              return (
+                '<article class="news-card">' +
+                '<div class="news-meta">' +
+                date +
+                "</div>" +
+                "<h2>" +
+                title +
+                "</h2>" +
+                "<p>" +
+                text +
+                "</p>" +
+                '<div class="news-actions">' +
+                actionHtml +
+                "</div>" +
+                "</article>"
+              );
+            })
+            .join("");
+          statusEl.textContent = "";
+        }
+
+        fetch("news.json", { cache: "no-store" })
+          .then(function (response) {
+            if (!response.ok) {
+              throw new Error("HTTP " + response.status);
+            }
+            return response.json();
+          })
+          .then(function (data) {
+            if (!Array.isArray(data)) {
+              throw new Error("news.json hat kein Array-Format");
+            }
+            render(data);
+          })
+          .catch(function () {
+            statusEl.textContent = "News konnten nicht geladen werden.";
+            listEl.innerHTML = "";
+          });
+      })();
+    </script>
     {{ include: footer.html }}
   </body>
 </html>
