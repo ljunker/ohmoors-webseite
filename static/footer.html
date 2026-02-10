@@ -1,0 +1,13 @@
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <p class="footer-copy">&copy; Ohmoor Squeezers e.V. - <span id="footer-year"></span></p>
+    <a href="impressum.html">Impressum</a>
+  </div>
+</footer>
+<script>
+  (function () {
+    var yearEl = document.getElementById("footer-year");
+    if (!yearEl) return;
+    yearEl.textContent = String(new Date().getFullYear());
+  })();
+</script>

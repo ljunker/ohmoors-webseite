@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 INCLUDE_TOKEN = "{{ include: nav.html }}"
+FOOTER_TOKEN = "{{ include: footer.html }}"
 ACTIVE_CLASS = "active"
 
 
@@ -34,16 +35,22 @@ def main(argv):
     static_dir = Path(argv[1])
     site_dir = Path(argv[2])
     nav_path = static_dir / "nav.html"
+    footer_path = static_dir / "footer.html"
     if not nav_path.exists():
         raise SystemExit("Missing static/nav.html")
     nav_html = nav_path.read_text(encoding="utf-8")
+    footer_html = footer_path.read_text(encoding="utf-8") if footer_path.exists() else ""
 
     for page in static_dir.glob("*.html"):
-        if page.name == "nav.html":
+        if page.name in {"nav.html", "footer.html"}:
             continue
         html = page.read_text(encoding="utf-8")
         if INCLUDE_TOKEN in html:
             html = html.replace(INCLUDE_TOKEN, mark_active(nav_html, page.name))
+        if FOOTER_TOKEN in html:
+            if not footer_html:
+                raise SystemExit("Missing static/footer.html")
+            html = html.replace(FOOTER_TOKEN, footer_html)
         (site_dir / page.name).write_text(html, encoding="utf-8")
 
 
