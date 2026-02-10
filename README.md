@@ -13,6 +13,21 @@ make serve           # startet lokalen Server auf _site
 `schedule.html` liest Termine clientseitig aus `events.json` (im Site-Root).
 `news.html` liest News clientseitig aus `news.json` (im Site-Root).
 
+## News verwalten (CRUD)
+
+Lokales Admin-UI:
+
+```bash
+python3 scripts/news_admin.py
+```
+
+Standard: bearbeitet `static/news.json`.
+Optional:
+
+```bash
+python3 scripts/news_admin.py --file /pfad/zur/news.json --host 127.0.0.1 --port 8765
+```
+
 ## Server-Update nur fuer Events
 
 Script: `scripts/events-update-server.sh`

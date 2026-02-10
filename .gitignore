@@ -1,3 +1,4 @@
 .idea
 _site
 events.json
+/static/*json.bak*
