@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ROOT="${PROJECT_ROOT:-$HOME/ohmoors-website}"
+PROJECT_ROOT="${PROJECT_ROOT:-$HOME/ohmoors-webseite}"
 DEPLOY_DIR="${DEPLOY_DIR:-/var/www/ohmoors.de/html}"
 
 if [[ ! -d "$PROJECT_ROOT" ]]; then
