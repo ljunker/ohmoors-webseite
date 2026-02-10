@@ -28,6 +28,18 @@ Optional:
 python3 scripts/news_admin.py --file /pfad/zur/news.json --host 127.0.0.1 --port 8765
 ```
 
+TUI-Variante:
+
+```bash
+python3 scripts/news_tui.py
+```
+
+Optional:
+
+```bash
+python3 scripts/news_tui.py --file /pfad/zur/news.json
+```
+
 ## Server-Update nur fuer Events
 
 Script: `scripts/events-update-server.sh`
