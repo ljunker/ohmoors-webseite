@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import re
 from pathlib import Path
 
 
@@ -9,8 +10,13 @@ VALID_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".svg"}
 
 def caption_from_filename(filename):
     stem = Path(filename).stem
-    caption = " ".join(stem.replace("-", " ").replace("_", " ").split())
-    return caption.title() if caption else filename
+    normalized = stem.replace("_", "-")
+    # Remove leading date prefix like 2026-01-31-
+    normalized = re.sub(r"^\d{4}-\d{2}-\d{2}-", "", normalized)
+    # Remove trailing sequence suffix like -01 or -12
+    normalized = re.sub(r"-\d+$", "", normalized)
+    caption = " ".join(part for part in normalized.split("-") if part and not part.isdigit())
+    return caption.title() if caption else stem.replace("-", " ").strip().title()
 
 
 def collect_images(images_dir):
