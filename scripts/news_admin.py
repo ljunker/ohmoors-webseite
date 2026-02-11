@@ -50,7 +50,7 @@ HTML_PAGE = """<!doctype html>
       <header>
         <div>
           <h1>News Admin</h1>
-          <p class="muted">Bearbeite Eintraege in news.json</p>
+          <p class="muted">Bearbeite Einträge in news.json</p>
         </div>
         <div class="controls">
           <button id="add-btn">Neu</button>
@@ -68,7 +68,7 @@ HTML_PAGE = """<!doctype html>
           <div class="item-actions">
             <button data-action="up">Hoch</button>
             <button data-action="down">Runter</button>
-            <button data-action="delete" class="danger">Loeschen</button>
+            <button data-action="delete" class="danger">Löschen</button>
           </div>
         </div>
         <div class="row">
