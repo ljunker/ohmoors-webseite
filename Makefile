@@ -5,12 +5,15 @@ EVENTS_PY := events.py
 PYTHON := python3
 DEPLOY_DIR ?= /var/www/ohmoors.de/html
 NIGHTLY_SCRIPT := scripts/nightly_update.sh
+GALLERY_MANIFEST_SCRIPT := scripts/build_gallery_manifest.py
+GALLERY_PICS_DIR := $(STATIC_DIR)/gallery-pics
+GALLERY_MANIFEST := $(SITE_DIR)/gallery-pics/gallery.json
 
-.PHONY: all build copy_static copy_events_json clean serve deploy nightly update_events
+.PHONY: all build copy_static copy_events_json copy_gallery_manifest clean serve deploy nightly update_events
 
 all: build
 
-build: copy_static copy_events_json build_pages
+build: copy_static copy_events_json copy_gallery_manifest build_pages
 
 jesus: clean build
 
@@ -25,6 +28,10 @@ copy_static:
 copy_events_json: $(EVENTS_JSON)
 	@mkdir -p $(SITE_DIR)
 	@cp $(EVENTS_JSON) $(SITE_DIR)/$(EVENTS_JSON)
+
+copy_gallery_manifest:
+	@mkdir -p $(SITE_DIR)/gallery-pics
+	@$(PYTHON) $(GALLERY_MANIFEST_SCRIPT) --images-dir $(GALLERY_PICS_DIR) --output $(GALLERY_MANIFEST)
 
 update_events:
 	@$(PYTHON) $(EVENTS_PY)

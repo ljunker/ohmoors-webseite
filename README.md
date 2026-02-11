@@ -12,6 +12,7 @@ make serve           # startet lokalen Server auf _site
 
 `schedule.html` liest Termine clientseitig aus `events.json` (im Site-Root).
 `news.html` liest News clientseitig aus `news.json` (im Site-Root).
+`gallery.html` liest Bilder clientseitig aus `gallery-pics/gallery.json` (wird beim Build automatisch aus `static/gallery-pics` erzeugt).
 
 ## News verwalten (CRUD)
 

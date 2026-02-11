@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200">
+  <defs>
+    <linearGradient id="g5" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3f3f46" />
+      <stop offset="100%" stop-color="#a1a1aa" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1200" fill="url(#g5)" />
+  <g stroke="#fafafa" stroke-width="14" opacity="0.7">
+    <path d="M120,220 L1480,980" />
+    <path d="M120,380 L1480,1140" />
+    <path d="M120,60 L1480,820" />
+    <path d="M120,980 L1480,220" />
+    <path d="M120,820 L1480,60" />
+  </g>
+  <rect x="350" y="450" width="900" height="300" rx="28" fill="#111827" opacity="0.6" />
+  <text x="800" y="630" fill="#f9fafb" font-size="74" font-family="Arial, sans-serif" text-anchor="middle">Ohmoor Squeezers</text>
+</svg>
