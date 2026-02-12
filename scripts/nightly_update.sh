@@ -8,6 +8,7 @@ RELOAD_NGINX="${RELOAD_NGINX:-0}"
 cd "$ROOT_DIR"
 
 # Refresh events.json only. schedule.html reads it client-side at runtime.
+source .venv/bin/activate
 /usr/bin/env python3 events.py
 
 if [[ -e "$DEPLOY_DIR" && ! -d "$DEPLOY_DIR" ]]; then
