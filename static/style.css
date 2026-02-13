@@ -90,8 +90,21 @@ a {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+.brand-logo {
+  display: block;
+  height: 40px;
+  width: auto;
+}
+
+.brand-text {
+  white-space: nowrap;
 }
 
 .nav-links {
@@ -495,6 +508,18 @@ tr.is-cancelled td {
 
   .nav-toggle {
     display: inline-flex;
+  }
+
+  .brand {
+    gap: 10px;
+  }
+
+  .brand-logo {
+    height: 34px;
+  }
+
+  .brand-text {
+    font-size: 15px;
   }
 
   .nav-links {
