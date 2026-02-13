@@ -1,8 +1,14 @@
 server {
-    server_name ohmoor-squeezers.de www.ohmoor-squeezers.de;
+    listen 443 ssl; # managed by Certbot
+    listen [::]:443 ssl ipv6only=on; # managed by Certbot
+    server_name ohmoor-squeezers.de;
 
     root /var/www/ohmoors.de/html;
     index index.html;
+
+    include /etc/nginx/snippets/ohmoors-security.conf;
+    include /etc/nginx/snippets/ohmoors-static-cache.conf;
+    include /etc/nginx/snippets/ohmoors-deny.conf;
 
     location / {
         try_files $uri $uri/ =404;
@@ -10,38 +16,34 @@ server {
 
     # schedule.html loads events.json directly; keep it uncached for fresh updates.
     location = /events.json {
-        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate";
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate" always;
         expires -1;
         try_files $uri =404;
     }
 
+    ssl_certificate /etc/letsencrypt/live/ohmoor-squeezers.de/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/ohmoor-squeezers.de/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+server {
     listen 443 ssl; # managed by Certbot
     listen [::]:443 ssl ipv6only=on; # managed by Certbot
+    server_name www.ohmoor-squeezers.de;
+
     ssl_certificate /etc/letsencrypt/live/ohmoor-squeezers.de/fullchain.pem; # managed by Certbot
     ssl_certificate_key /etc/letsencrypt/live/ohmoor-squeezers.de/privkey.pem; # managed by Certbot
     include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
 
-
+    return 301 https://ohmoor-squeezers.de$request_uri;
 }
 
 server {
-    if ($host = www.ohmoor-squeezers.de) {
-        return 301 https://$host$request_uri;
-    } # managed by Certbot
-
-
-    if ($host = ohmoor-squeezers.de) {
-        return 301 https://$host$request_uri;
-    } # managed by Certbot
-
-
     listen 80;
     listen [::]:80;
     server_name ohmoor-squeezers.de www.ohmoor-squeezers.de;
-    return 301 https://$host$request_uri; # managed by Certbot
 
-
-
-
+    return 301 https://ohmoor-squeezers.de$request_uri;
 }

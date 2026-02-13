@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Ohmoors events refresh daily
+
+[Timer]
+OnCalendar=*-*-* 02:15:00
+Persistent=true
+AccuracySec=1m
+Unit=ohmoors-events.service
+
+[Install]
+WantedBy=timers.target

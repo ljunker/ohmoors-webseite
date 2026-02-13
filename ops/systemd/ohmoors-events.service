@@ -1,0 +1,15 @@
+[Unit]
+Description=Refresh Ohmoors events.json
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Adjust these paths to your server checkout location.
+WorkingDirectory=/Users/lj/website
+Environment=PROJECT_ROOT=/Users/lj/website
+Environment=DEPLOY_DIR=/var/www/ohmoors.de/html
+Environment=LOCK_FILE=/tmp/ohmoors-events.lock
+ExecStart=/Users/lj/website/scripts/nightly_update.sh
+StandardOutput=journal
+StandardError=journal
