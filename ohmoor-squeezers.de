@@ -29,7 +29,7 @@ server {
 
 server {
     listen 443 ssl; # managed by Certbot
-    listen [::]:443 ssl ipv6only=on; # managed by Certbot
+    listen [::]:443 ssl; # managed by Certbot
     server_name www.ohmoor-squeezers.de;
 
     ssl_certificate /etc/letsencrypt/live/ohmoor-squeezers.de/fullchain.pem; # managed by Certbot
