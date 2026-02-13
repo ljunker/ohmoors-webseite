@@ -1,6 +1,4 @@
 server {
-    listen 80;
-    listen [::]:80;
     server_name ohmoor-squeezers.de www.ohmoor-squeezers.de;
 
     root /var/www/ohmoors.de/html;
@@ -16,4 +14,34 @@ server {
         expires -1;
         try_files $uri =404;
     }
+
+    listen 443 ssl; # managed by Certbot
+    listen [::]:443 ssl ipv6only=on; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/ohmoor-squeezers.de/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/ohmoor-squeezers.de/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+
+}
+
+server {
+    if ($host = www.ohmoor-squeezers.de) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    if ($host = ohmoor-squeezers.de) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    listen [::]:80;
+    server_name ohmoor-squeezers.de www.ohmoor-squeezers.de;
+    return 301 https://$host$request_uri; # managed by Certbot
+
+
+
+
 }
