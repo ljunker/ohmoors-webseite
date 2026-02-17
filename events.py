@@ -27,5 +27,3 @@ for e in es:
 
 with open("events.json", "w", encoding="utf-8") as f:
     json.dump(events_json, f, ensure_ascii=False, indent=2)
-
-print("Events gespeichert")
