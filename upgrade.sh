@@ -12,5 +12,5 @@ if [[ "$before" != "$after" ]]; then
   source .venv/bin/activate
   make clean build deploy
 else
-  echo "Kein Git-Update vorhanden, überspringe make."
+  echo "INFO: Kein Git-Update vorhanden, überspringe make."
 fi
