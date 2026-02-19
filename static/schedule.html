@@ -97,6 +97,10 @@
           return /abgesagt/i.test(String(details || ""));
         }
 
+        function isNoDance(details) {
+          return /kein\s+tanzen/i.test(String(details || ""));
+        }
+
         function cleanCancelledDetails(details) {
           var cleaned = String(details || "")
             .replace(/abgesagt/gi, "")
@@ -107,6 +111,14 @@
             return "Clubabend";
           }
           return cleaned;
+        }
+
+        function cleanNoDanceReason(details) {
+          return String(details || "")
+            .replace(/kein\s+tanzen/gi, "")
+            .replace(/^[\s\-–—:]+/, "")
+            .replace(/\s+/g, " ")
+            .trim();
         }
 
         function formatLocation(location) {
@@ -139,23 +151,36 @@
               var startLocal = toUtcDate(event.date, event.time);
               var endLocal = toUtcDate(event.end_date, event.end_time);
               var cancelled = isCancelled(event.details);
-              var detailsText = cancelled
-                ? cleanCancelledDetails(event.details)
-                : String(event.details || "");
-              var detailsHtml = cancelled
-                ? '<span class="badge cancelled">Abgesagt</span> ' + escapeHtml(detailsText)
-                : escapeHtml(detailsText);
+              var noDance = !cancelled && isNoDance(event.details);
+              var detailsHtml = "";
+
+              if (cancelled) {
+                detailsHtml =
+                  '<span class="badge cancelled">Abgesagt</span> ' +
+                  escapeHtml(cleanCancelledDetails(event.details));
+              } else if (noDance) {
+                var reason = cleanNoDanceReason(event.details);
+                detailsHtml =
+                  '<span class="badge no-dance">Kein Tanzen</span>' +
+                  (reason ? " " + escapeHtml(reason) : "");
+              } else {
+                detailsHtml = escapeHtml(String(event.details || ""));
+              }
 
               if (!startLocal || !endLocal) {
                 return "";
               }
 
+              var dateLine = noDance
+                ? formatDateDe(startLocal)
+                : formatDateDe(startLocal) + " | " + formatTime(startLocal) + "-" + formatTime(endLocal);
+
               return (
                 '<tr' +
-                (cancelled ? ' class="is-cancelled"' : "") +
+                (cancelled ? ' class="is-cancelled"' : noDance ? ' class="is-no-dance"' : "") +
                 ">" +
                 '<td data-label="Datum & Zeit">' +
-                escapeHtml(formatDateDe(startLocal) + " | " + formatTime(startLocal) + "-" + formatTime(endLocal)) +
+                escapeHtml(dateLine) +
                 "</td>" +
                 '<td data-label="Details">' +
                 detailsHtml +

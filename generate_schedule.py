@@ -64,6 +64,29 @@ def load_events(path):
     return events
 
 
+def is_cancelled(details):
+    return "abgesagt" in details.lower()
+
+
+def clean_cancelled_details(details):
+    cleaned = details.replace("abgesagt", "").replace("Abgesagt", "")
+    cleaned = " ".join(cleaned.replace("-", " ").split()).strip()
+    if not cleaned:
+        return "Clubabend"
+    return cleaned
+
+
+def is_no_dance(details):
+    return bool(re.search(r"kein\s+tanzen", details, flags=re.IGNORECASE))
+
+
+def clean_no_dance_reason(details):
+    cleaned = re.sub(r"kein\s+tanzen", "", details, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^[\s\-–—:]+", "", cleaned)
+    cleaned = " ".join(cleaned.split()).strip()
+    return cleaned
+
+
 def render(events, nav_html):
     title = "Ohmoor Squeezers e.V. - Clubabende"
     rows = []
@@ -74,13 +97,17 @@ def render(events, nav_html):
         time = html.escape(start_local.strftime("%H:%M"))
         end_time = html.escape(end_local.strftime("%H:%M"))
         raw_details = e.get("details", "")
-        is_cancelled = "abgesagt" in raw_details.lower()
-        if is_cancelled:
-            cleaned = raw_details.replace("abgesagt", "").replace("Abgesagt", "")
-            cleaned = " ".join(cleaned.replace("-", " ").split()).strip()
-            if not cleaned:
-                cleaned = "Clubabend"
-            details = f"<span class=\"badge cancelled\">Abgesagt</span> {html.escape(cleaned)}"
+        cancelled = is_cancelled(raw_details)
+        no_dance = (not cancelled) and is_no_dance(raw_details)
+        if cancelled:
+            details = (
+                f"<span class=\"badge cancelled\">Abgesagt</span> "
+                f"{html.escape(clean_cancelled_details(raw_details))}"
+            )
+        elif no_dance:
+            reason = clean_no_dance_reason(raw_details)
+            reason_text = f" {html.escape(reason)}" if reason else ""
+            details = f"<span class=\"badge no-dance\">Kein Tanzen</span>{reason_text}"
         else:
             details = html.escape(raw_details)
         raw_location = e.get("location", "")
@@ -90,8 +117,12 @@ def render(events, nav_html):
         else:
             location = ""
         caller = html.escape(e.get("caller", ""))
-        date_line = f"{date} | {time}-{end_time}"
-        row_class = " class=\"is-cancelled\"" if is_cancelled else ""
+        date_line = date if no_dance else f"{date} | {time}-{end_time}"
+        row_class = (
+            " class=\"is-cancelled\""
+            if cancelled
+            else (" class=\"is-no-dance\"" if no_dance else "")
+        )
         rows.append(
             f"        <tr{row_class}>\n"
             f"          <td data-label=\"Datum & Zeit\">{html.escape(date_line)}</td>\n"

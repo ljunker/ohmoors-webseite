@@ -495,8 +495,17 @@ tr:last-child td {
   color: #991b1b;
 }
 
+.badge.no-dance {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 tr.is-cancelled td {
   color: #991b1b;
+}
+
+tr.is-no-dance td {
+  color: #1e40af;
 }
 
 @media (max-width: 720px) {
