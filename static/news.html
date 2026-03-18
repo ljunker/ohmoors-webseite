@@ -48,7 +48,7 @@
               var text = escapeHtml(item.text || "");
               var flyerUrl = String(item.flyer_url || "").trim();
               var flyerLabel = escapeHtml(item.flyer_label || "Flyer (PDF)");
-              var flyerText = escapeHtml(item.flyer_text || "Flyer folgt");
+              var flyerText = escapeHtml(item.flyer_text || "");
               var actionHtml = flyerUrl
                 ? '<a class="button" href="' +
                   escapeHtml(flyerUrl) +
