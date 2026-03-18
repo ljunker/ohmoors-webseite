@@ -33,8 +33,7 @@ copy_gallery_manifest:
 	@mkdir -p $(SITE_DIR)/gallery-pics
 	@$(PYTHON) $(GALLERY_MANIFEST_SCRIPT) --images-dir $(GALLERY_PICS_DIR) --output $(GALLERY_MANIFEST)
 
-update_events:
-	@$(PYTHON) $(EVENTS_PY)
+update_events: $(EVENTS_JSON)
 
 $(EVENTS_JSON): $(EVENTS_PY)
 	@$(PYTHON) $(EVENTS_PY)
@@ -43,7 +42,7 @@ clean:
 	@rm -rf $(SITE_DIR)
 
 clean_all: clean
-	@rm $(EVENTS_JSON)
+	@rm -f $(EVENTS_JSON)
 
 serve: build
 	@$(PYTHON) -m http.server -d $(SITE_DIR)
