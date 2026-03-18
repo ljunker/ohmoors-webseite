@@ -34,6 +34,145 @@
             .replace(/'/g, "&#39;");
         }
 
+        function sanitizeUrl(value) {
+          var url = String(value || "").trim();
+
+          if (!url) {
+            return "";
+          }
+
+          if (
+            /^(https?:|mailto:|tel:)/i.test(url) ||
+            /^[./#?]/.test(url) ||
+            !/^[a-z][a-z0-9+.-]*:/i.test(url)
+          ) {
+            return url;
+          }
+
+          return "";
+        }
+
+        function restorePlaceholders(text, placeholders) {
+          return text.replace(/\u0000(\d+)\u0000/g, function (_, index) {
+            return placeholders[Number(index)] || "";
+          });
+        }
+
+        function renderInlineMarkdown(value) {
+          var placeholders = [];
+          var text = escapeHtml(value);
+
+          function stash(html) {
+            placeholders.push(html);
+            return "\u0000" + (placeholders.length - 1) + "\u0000";
+          }
+
+          text = text.replace(/`([^`]+)`/g, function (_, code) {
+            return stash("<code>" + code + "</code>");
+          });
+
+          text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (_, label, url) {
+            var safeUrl = sanitizeUrl(url);
+            if (!safeUrl) {
+              return label;
+            }
+
+            return stash(
+              '<a href="' +
+                escapeHtml(safeUrl) +
+                '" target="_blank" rel="noopener noreferrer">' +
+                label +
+                "</a>"
+            );
+          });
+
+          text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+          text = text.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+
+          return restorePlaceholders(text, placeholders);
+        }
+
+        function renderMarkdown(value) {
+          var lines = String(value || "").replace(/\r\n?/g, "\n").split("\n");
+          var html = [];
+          var paragraph = [];
+          var listType = null;
+          var listItems = [];
+
+          function flushParagraph() {
+            if (!paragraph.length) {
+              return;
+            }
+
+            html.push("<p>" + renderInlineMarkdown(paragraph.join(" ")) + "</p>");
+            paragraph = [];
+          }
+
+          function flushList() {
+            if (!listType || !listItems.length) {
+              listType = null;
+              listItems = [];
+              return;
+            }
+
+            html.push(
+              "<" +
+                listType +
+                ">" +
+                listItems
+                  .map(function (item) {
+                    return "<li>" + renderInlineMarkdown(item) + "</li>";
+                  })
+                  .join("") +
+                "</" +
+                listType +
+                ">"
+            );
+            listType = null;
+            listItems = [];
+          }
+
+          lines.forEach(function (line) {
+            var trimmed = line.trim();
+            var unorderedMatch = /^[-*+]\s+(.+)$/.exec(trimmed);
+            var orderedMatch = /^(\d+)\.\s+(.+)$/.exec(trimmed);
+
+            if (!trimmed) {
+              flushParagraph();
+              flushList();
+              return;
+            }
+
+            if (unorderedMatch) {
+              flushParagraph();
+              if (listType !== "ul") {
+                flushList();
+                listType = "ul";
+              }
+              listItems.push(unorderedMatch[1]);
+              return;
+            }
+
+            if (orderedMatch) {
+              flushParagraph();
+              if (listType !== "ol") {
+                flushList();
+                listType = "ol";
+              }
+              listItems.push(orderedMatch[2]);
+              return;
+            }
+
+            flushList();
+            paragraph.push(trimmed);
+          });
+
+          flushParagraph();
+          flushList();
+
+          return html.join("") || "<p></p>";
+        }
+
         function render(newsItems) {
           if (!newsItems.length) {
             statusEl.textContent = "";
@@ -45,8 +184,8 @@
             .map(function (item) {
               var date = escapeHtml(item.date || "");
               var title = escapeHtml(item.title || "");
-              var text = escapeHtml(item.text || "");
-              var flyerUrl = String(item.flyer_url || "").trim();
+              var text = renderMarkdown(item.text || "");
+              var flyerUrl = sanitizeUrl(item.flyer_url || "");
               var flyerLabel = escapeHtml(item.flyer_label || "Flyer (PDF)");
               var flyerText = escapeHtml(item.flyer_text || "");
               var actionHtml = flyerUrl
@@ -65,9 +204,9 @@
                 "<h2>" +
                 title +
                 "</h2>" +
-                "<p>" +
+                '<div class="news-body">' +
                 text +
-                "</p>" +
+                "</div>" +
                 '<div class="news-actions">' +
                 actionHtml +
                 "</div>" +

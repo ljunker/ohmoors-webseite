@@ -23,6 +23,7 @@ python3 scripts/news_admin.py
 ```
 
 Standard: bearbeitet `static/news.json`.
+`text` in den News-Eintraegen unterstuetzt Markdown fuer Absätze, Listen, Links sowie einfache Hervorhebungen.
 Optional:
 
 ```bash

@@ -332,6 +332,32 @@ h1 {
   font-size: 20px;
 }
 
+.news-body > :first-child {
+  margin-top: 0;
+}
+
+.news-body > :last-child {
+  margin-bottom: 0;
+}
+
+.news-body ul,
+.news-body ol {
+  margin: 10px 0;
+  padding-left: 22px;
+}
+
+.news-body li + li {
+  margin-top: 6px;
+}
+
+.news-body code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.95em;
+  background: #eef3ea;
+  border-radius: 6px;
+  padding: 0.12em 0.4em;
+}
+
 .news-meta {
   font-size: 12px;
   text-transform: uppercase;
