@@ -32,6 +32,14 @@ def load_news(path):
     return data
 
 
+def is_published_value(value):
+    if value is False:
+        return False
+    if isinstance(value, str):
+        return value.strip().lower() not in {"false", "0", "no", "nein", "off"}
+    return value is not False
+
+
 def normalize_items(items):
     allowed = {k for k, _ in FIELDS}
     normalized = []
@@ -39,6 +47,8 @@ def normalize_items(items):
         if not isinstance(item, dict):
             continue
         clean = {}
+        if not is_published_value(item.get("published", True)):
+            clean["published"] = False
         for key in allowed:
             value = item.get(key, "")
             if value is None:
@@ -101,6 +111,18 @@ def edit_item(stdscr, item):
         else:
             item[key] = value
         y += 3
+    stdscr.addstr(y - 1, 2, "-" * 40)
+    published_value = "j" if is_published_value(item.get("published", True)) else "n"
+    published = prompt_line(stdscr, y, "Veröffentlicht (j/n):", published_value)
+    if published == "":
+        pass
+    elif published == "-":
+        item.pop("published", None)
+    elif published.lower() in {"j", "ja", "y", "yes", "1"}:
+        item.pop("published", None)
+    elif published.lower() in {"n", "nein", "no", "0", "off"}:
+        item["published"] = False
+    y += 3
     stdscr.addstr(y, 2, "Speichern mit Enter...")
     stdscr.getch()
     return item
@@ -117,6 +139,8 @@ def draw_list(stdscr, items, index, status):
     else:
         for i, item in enumerate(items):
             line = f"{i+1}. {item.get('date','')} | {item.get('title','')}"
+            if not is_published_value(item.get("published", True)):
+                line += " [Entwurf]"
             if i == index:
                 stdscr.addstr(6 + i, 2, line[: w - 4], curses.A_REVERSE)
             else:

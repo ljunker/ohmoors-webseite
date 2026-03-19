@@ -58,6 +58,20 @@
           });
         }
 
+        function isPublished(item) {
+          var value = item && item.published;
+
+          if (value === false) {
+            return false;
+          }
+
+          if (typeof value === "string") {
+            return !/^(false|0|no|nein|off)$/i.test(value.trim());
+          }
+
+          return value !== false;
+        }
+
         function renderInlineMarkdown(value) {
           var placeholders = [];
           var text = escapeHtml(value);
@@ -174,13 +188,15 @@
         }
 
         function render(newsItems) {
-          if (!newsItems.length) {
+          var publishedItems = newsItems.filter(isPublished);
+
+          if (!publishedItems.length) {
             statusEl.textContent = "";
             listEl.innerHTML = "<p>Keine News vorhanden.</p>";
             return;
           }
 
-          listEl.innerHTML = newsItems
+          listEl.innerHTML = publishedItems
             .map(function (item) {
               var date = escapeHtml(item.date || "");
               var title = escapeHtml(item.title || "");

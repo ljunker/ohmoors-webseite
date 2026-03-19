@@ -24,11 +24,22 @@ python3 scripts/news_admin.py
 
 Standard: bearbeitet `static/news.json`.
 `text` in den News-Eintraegen unterstuetzt Markdown fuer Absätze, Listen, Links sowie einfache Hervorhebungen.
+Das Admin-UI zeigt beim Bearbeiten eine Live-Vorschau des Markdown-Renderings an.
+Zusätzlich gibt es Buttons für `Git add/commit/push` von `news.json` sowie für ein direktes Deploy von `news.json` ins Webroot.
+Mit `published: false` bleibt ein Eintrag als Entwurf gespeichert und erscheint nicht auf der öffentlichen News-Seite.
 Optional:
 
 ```bash
 python3 scripts/news_admin.py --file /pfad/zur/news.json --host 127.0.0.1 --port 8765
 ```
+
+Optional mit abweichendem Deploy-Ziel:
+
+```bash
+python3 scripts/news_admin.py --deploy-dir /pfad/zum/webroot
+```
+
+Standard-Deploy-Ziel: `/var/www/ohmoors.de/html`
 
 TUI-Variante:
 

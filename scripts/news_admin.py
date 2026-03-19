@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import sys
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -10,9 +11,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_NEWS_FILE = os.path.join(BASE_DIR, "static", "news.json")
+DEFAULT_DEPLOY_DIR = "/var/www/ohmoors.de/html"
 
 
-HTML_PAGE = """<!doctype html>
+HTML_PAGE = r"""<!doctype html>
 <html lang="de">
   <head>
     <meta charset="utf-8" />
@@ -34,11 +36,29 @@ HTML_PAGE = """<!doctype html>
       .row { display: grid; grid-template-columns: 140px 1fr; gap: 12px; align-items: center; }
       .row + .row { margin-top: 10px; }
       input, textarea { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font: inherit; }
-      textarea { min-height: 70px; resize: vertical; }
+      input[type="checkbox"] { width: auto; padding: 0; }
+      textarea { min-height: 110px; resize: vertical; }
       .item-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
       .item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
       .list { display: grid; gap: 16px; margin-top: 16px; }
       .status { margin-top: 10px; font-weight: 600; }
+      .field-note { margin-top: 6px; font-size: 13px; color: var(--muted); }
+      .toggle-field { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+      .preview-block { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+      .preview-label { margin: 0 0 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+      .preview-card { background: #fbfcfd; border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06); }
+      .preview-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .preview-meta { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+      .preview-state { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 999px; border: 1px solid #f5c2c7; background: #fff1f2; color: #9f1239; font-size: 12px; font-weight: 700; }
+      .preview-card h2 { margin: 8px 0 8px; font-size: 20px; }
+      .preview-body > :first-child { margin-top: 0; }
+      .preview-body > :last-child { margin-bottom: 0; }
+      .preview-body ul, .preview-body ol { margin: 10px 0; padding-left: 22px; }
+      .preview-body li + li { margin-top: 6px; }
+      .preview-body code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 0.95em; background: #eef3ea; border-radius: 6px; padding: 0.12em 0.4em; }
+      .preview-body a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 2px; font-weight: 600; }
+      .preview-actions { margin-top: 14px; }
+      .button-preview { display: inline-flex; align-items: center; justify-content: center; padding: 12px 22px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 600; }
       @media (max-width: 720px) {
         .row { grid-template-columns: 1fr; }
         header { flex-direction: column; align-items: flex-start; }
@@ -55,6 +75,8 @@ HTML_PAGE = """<!doctype html>
         <div class="controls">
           <button id="add-btn">Neu</button>
           <button id="save-btn" class="primary">Speichern</button>
+          <button id="git-btn">Git Commit & Push</button>
+          <button id="deploy-btn">Deploy news.json</button>
         </div>
       </header>
       <div id="status" class="status muted"></div>
@@ -81,7 +103,20 @@ HTML_PAGE = """<!doctype html>
         </div>
         <div class="row">
           <label>Text</label>
-          <textarea name="text" placeholder="Kurztext"></textarea>
+          <div>
+            <textarea name="text" placeholder="Kurztext in Markdown"></textarea>
+            <div class="field-note">Markdown: Absätze, Listen, Links, <code>**fett**</code>, <code>*kursiv*</code>, <code>`code`</code></div>
+          </div>
+        </div>
+        <div class="row">
+          <label>Veröffentlicht</label>
+          <div>
+            <label class="toggle-field">
+              <input name="published" type="checkbox" checked />
+              <span>Artikel ist öffentlich sichtbar</span>
+            </label>
+            <div class="field-note">Nicht veröffentlichte Artikel bleiben hier als Entwurf sichtbar, erscheinen aber nicht auf der News-Seite.</div>
+          </div>
         </div>
         <div class="row">
           <label>Flyer URL</label>
@@ -95,6 +130,18 @@ HTML_PAGE = """<!doctype html>
           <label>Flyer Text (ohne URL)</label>
           <input name="flyer_text" placeholder="Flyer folgt" />
         </div>
+        <div class="preview-block">
+          <p class="preview-label">Vorschau</p>
+          <article class="preview-card">
+            <div class="preview-meta-row">
+              <div class="preview-meta" data-preview="date"></div>
+              <span class="preview-state" data-preview="state" hidden>Entwurf</span>
+            </div>
+            <h2 data-preview="title"></h2>
+            <div class="preview-body" data-preview="text"></div>
+            <div class="preview-actions" data-preview="actions"></div>
+          </article>
+        </div>
       </div>
     </template>
 
@@ -104,7 +151,41 @@ HTML_PAGE = """<!doctype html>
         var statusEl = document.getElementById("status");
         var addBtn = document.getElementById("add-btn");
         var saveBtn = document.getElementById("save-btn");
+        var gitBtn = document.getElementById("git-btn");
+        var deployBtn = document.getElementById("deploy-btn");
         var template = document.getElementById("item-template");
+
+        function parseJsonResponse(res) {
+          return res.text().then(function (text) {
+            var data = {};
+
+            if (text) {
+              try {
+                data = JSON.parse(text);
+              } catch (err) {
+                throw new Error("Ungültige Server-Antwort");
+              }
+            }
+
+            if (!res.ok) {
+              throw new Error(data.error || ("HTTP " + res.status));
+            }
+
+            return data;
+          });
+        }
+
+        function isPublishedValue(value) {
+          if (value === false) {
+            return false;
+          }
+
+          if (typeof value === "string") {
+            return !/^(false|0|no|nein|off)$/i.test(value.trim());
+          }
+
+          return value !== false;
+        }
 
         function setStatus(text, isError) {
           statusEl.textContent = text || "";
@@ -113,14 +194,195 @@ HTML_PAGE = """<!doctype html>
           else statusEl.style.color = "";
         }
 
+        function escapeHtml(value) {
+          return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        }
+
+        function sanitizeUrl(value) {
+          var url = String(value || "").trim();
+
+          if (!url) {
+            return "";
+          }
+
+          if (
+            /^(https?:|mailto:|tel:)/i.test(url) ||
+            /^[./#?]/.test(url) ||
+            !/^[a-z][a-z0-9+.-]*:/i.test(url)
+          ) {
+            return url;
+          }
+
+          return "";
+        }
+
+        function restorePlaceholders(text, placeholders) {
+          return text.replace(/\u0000(\d+)\u0000/g, function (_, index) {
+            return placeholders[Number(index)] || "";
+          });
+        }
+
+        function renderInlineMarkdown(value) {
+          var placeholders = [];
+          var text = escapeHtml(value);
+
+          function stash(html) {
+            placeholders.push(html);
+            return "\u0000" + (placeholders.length - 1) + "\u0000";
+          }
+
+          text = text.replace(/`([^`]+)`/g, function (_, code) {
+            return stash("<code>" + code + "</code>");
+          });
+
+          text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (_, label, url) {
+            var safeUrl = sanitizeUrl(url);
+            if (!safeUrl) {
+              return label;
+            }
+
+            return stash(
+              '<a href="' +
+                escapeHtml(safeUrl) +
+                '" target="_blank" rel="noopener noreferrer">' +
+                label +
+                "</a>"
+            );
+          });
+
+          text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+          text = text.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+
+          return restorePlaceholders(text, placeholders);
+        }
+
+        function renderMarkdown(value) {
+          var lines = String(value || "").replace(/\r\n?/g, "\n").split("\n");
+          var html = [];
+          var paragraph = [];
+          var listType = null;
+          var listItems = [];
+
+          function flushParagraph() {
+            if (!paragraph.length) {
+              return;
+            }
+
+            html.push("<p>" + renderInlineMarkdown(paragraph.join(" ")) + "</p>");
+            paragraph = [];
+          }
+
+          function flushList() {
+            if (!listType || !listItems.length) {
+              listType = null;
+              listItems = [];
+              return;
+            }
+
+            html.push(
+              "<" +
+                listType +
+                ">" +
+                listItems
+                  .map(function (item) {
+                    return "<li>" + renderInlineMarkdown(item) + "</li>";
+                  })
+                  .join("") +
+                "</" +
+                listType +
+                ">"
+            );
+            listType = null;
+            listItems = [];
+          }
+
+          lines.forEach(function (line) {
+            var trimmed = line.trim();
+            var unorderedMatch = /^[-*+]\s+(.+)$/.exec(trimmed);
+            var orderedMatch = /^(\d+)\.\s+(.+)$/.exec(trimmed);
+
+            if (!trimmed) {
+              flushParagraph();
+              flushList();
+              return;
+            }
+
+            if (unorderedMatch) {
+              flushParagraph();
+              if (listType !== "ul") {
+                flushList();
+                listType = "ul";
+              }
+              listItems.push(unorderedMatch[1]);
+              return;
+            }
+
+            if (orderedMatch) {
+              flushParagraph();
+              if (listType !== "ol") {
+                flushList();
+                listType = "ol";
+              }
+              listItems.push(orderedMatch[2]);
+              return;
+            }
+
+            flushList();
+            paragraph.push(trimmed);
+          });
+
+          flushParagraph();
+          flushList();
+
+          return html.join("") || "<p class='muted'>Keine Vorschau vorhanden.</p>";
+        }
+
+        function updatePreview(node) {
+          function v(name) {
+            return node.querySelector("[name='" + name + "']").value.trim();
+          }
+
+          var published = node.querySelector("[name='published']").checked;
+          var date = v("date");
+          var title = v("title");
+          var text = v("text");
+          var flyerUrl = sanitizeUrl(v("flyer_url"));
+          var flyerLabel = v("flyer_label") || "Flyer (PDF)";
+          var flyerText = v("flyer_text");
+          var stateEl = node.querySelector("[data-preview='state']");
+
+          node.querySelector("[data-preview='date']").textContent = date || "Datum";
+          node.querySelector("[data-preview='title']").textContent = title || "Titel";
+          node.querySelector("[data-preview='text']").innerHTML = renderMarkdown(text);
+          stateEl.hidden = published;
+          node.querySelector("[data-preview='actions']").innerHTML = flyerUrl
+            ? '<span class="button-preview">' + escapeHtml(flyerLabel) + "</span>"
+            : '<span class="muted">' + escapeHtml(flyerText || "Kein Flyer verlinkt") + "</span>";
+        }
+
         function createItem(item) {
           var node = template.content.firstElementChild.cloneNode(true);
           node.querySelector("[name='date']").value = item.date || "";
           node.querySelector("[name='title']").value = item.title || "";
           node.querySelector("[name='text']").value = item.text || "";
+          node.querySelector("[name='published']").checked = isPublishedValue(item.published);
           node.querySelector("[name='flyer_url']").value = item.flyer_url || "";
           node.querySelector("[name='flyer_label']").value = item.flyer_label || "";
           node.querySelector("[name='flyer_text']").value = item.flyer_text || "";
+
+          Array.prototype.forEach.call(
+            node.querySelectorAll("input, textarea"),
+            function (field) {
+              field.addEventListener("input", function () {
+                updatePreview(node);
+              });
+            }
+          );
 
           node.addEventListener("click", function (e) {
             var action = e.target && e.target.getAttribute("data-action");
@@ -140,6 +402,7 @@ HTML_PAGE = """<!doctype html>
             }
           });
 
+          updatePreview(node);
           return node;
         }
 
@@ -153,6 +416,7 @@ HTML_PAGE = """<!doctype html>
               title: v("title"),
               text: v("text"),
             };
+            if (!card.querySelector("[name='published']").checked) item.published = false;
             var flyerUrl = v("flyer_url");
             var flyerLabel = v("flyer_label");
             var flyerText = v("flyer_text");
@@ -170,13 +434,18 @@ HTML_PAGE = """<!doctype html>
           });
         }
 
+        function postJson(url, payload) {
+          return fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload || {}),
+          }).then(parseJsonResponse);
+        }
+
         function load() {
           setStatus("Lade ...");
           fetch("api/news", { cache: "no-store" })
-            .then(function (res) {
-              if (!res.ok) throw new Error("HTTP " + res.status);
-              return res.json();
-            })
+            .then(parseJsonResponse)
             .then(function (data) {
               if (!Array.isArray(data)) throw new Error("news.json hat kein Array-Format");
               render(data);
@@ -190,20 +459,59 @@ HTML_PAGE = """<!doctype html>
         function save() {
           var payload = readItems();
           setStatus("Speichere ...");
-          fetch("api/news", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload, null, 2),
-          })
-            .then(function (res) {
-              if (!res.ok) throw new Error("HTTP " + res.status);
-              return res.json();
-            })
+          return postJson("api/news", payload)
             .then(function (data) {
               setStatus(data.message || "Gespeichert");
+              return data;
             })
             .catch(function (err) {
               setStatus("Fehler beim Speichern: " + err.message, true);
+              throw err;
+            });
+        }
+
+        function commitAndPush() {
+          var message = window.prompt("Commit-Message", "Update news.json");
+          if (message === null) {
+            return;
+          }
+
+          message = message.trim();
+          if (!message) {
+            setStatus("Commit-Message fehlt.", true);
+            return;
+          }
+
+          save()
+            .then(function () {
+              setStatus("Committe und pushe ...");
+              return postJson("api/git-commit-push", { message: message });
+            })
+            .then(function (data) {
+              setStatus(data.message || "Git-Push abgeschlossen");
+            })
+            .catch(function (err) {
+              if (/^Fehler beim Speichern: /.test(statusEl.textContent)) {
+                return;
+              }
+              setStatus("Fehler bei Git Commit & Push: " + err.message, true);
+            });
+        }
+
+        function deployNews() {
+          save()
+            .then(function () {
+              setStatus("Deploye news.json ...");
+              return postJson("api/deploy", {});
+            })
+            .then(function (data) {
+              setStatus(data.message || "Deploy abgeschlossen");
+            })
+            .catch(function (err) {
+              if (/^Fehler beim Speichern: /.test(statusEl.textContent)) {
+                return;
+              }
+              setStatus("Fehler beim Deploy: " + err.message, true);
             });
         }
 
@@ -211,6 +519,8 @@ HTML_PAGE = """<!doctype html>
           listEl.appendChild(createItem({}));
         });
         saveBtn.addEventListener("click", save);
+        gitBtn.addEventListener("click", commitAndPush);
+        deployBtn.addEventListener("click", deployNews);
 
         load();
       })();
@@ -230,6 +540,14 @@ def load_news(path):
     return data
 
 
+def is_published_value(value):
+    if value is False:
+        return False
+    if isinstance(value, str):
+        return value.strip().lower() not in {"false", "0", "no", "nein", "off"}
+    return value is not False
+
+
 def normalize_items(items):
     allowed = {"date", "title", "text", "flyer_url", "flyer_label", "flyer_text"}
     normalized = []
@@ -237,6 +555,8 @@ def normalize_items(items):
         if not isinstance(item, dict):
             continue
         clean = {}
+        if not is_published_value(item.get("published", True)):
+            clean["published"] = False
         for key in allowed:
             value = item.get(key, "")
             if value is None:
@@ -259,6 +579,72 @@ def write_news(path, items):
         json.dump(items, f, ensure_ascii=False, indent=2)
         f.write("\n")
     os.replace(tmp_path, path)
+
+
+def run_command(cmd, cwd):
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    if result.returncode != 0:
+        message = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(message or f"Command failed: {' '.join(cmd)}")
+    return result
+
+
+def find_git_root(path):
+    directory = os.path.dirname(os.path.realpath(path)) or "."
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=directory,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        message = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(message or "Git-Repository nicht gefunden")
+    return os.path.realpath(result.stdout.strip())
+
+
+def git_commit_and_push(news_path, message):
+    message = str(message or "").strip()
+    if not message:
+        raise ValueError("Commit-Message fehlt")
+
+    news_path = os.path.realpath(news_path)
+    repo_root = find_git_root(news_path)
+    common_root = os.path.commonpath([news_path, repo_root])
+    if common_root != repo_root:
+        raise RuntimeError("news.json liegt nicht im Git-Repository")
+
+    rel_path = os.path.relpath(news_path, repo_root)
+    run_command(["git", "add", "--", rel_path], cwd=repo_root)
+    diff_result = subprocess.run(
+        ["git", "diff", "--cached", "--name-only", "--", rel_path],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+    )
+    if diff_result.returncode != 0:
+        message_text = (diff_result.stderr or diff_result.stdout or "").strip()
+        raise RuntimeError(message_text or "Git-Status konnte nicht geprüft werden")
+    if not diff_result.stdout.strip():
+        return "Keine Änderungen in news.json zum Committen."
+
+    run_command(
+        ["git", "commit", "--no-gpg-sign", "-m", message, "--only", "--", rel_path],
+        cwd=repo_root,
+    )
+    run_command(["git", "push"], cwd=repo_root)
+    return "news.json wurde committed und gepusht."
+
+
+def deploy_news(news_path, deploy_dir):
+    news_path = os.path.realpath(news_path)
+    deploy_dir = os.path.realpath(deploy_dir)
+    os.makedirs(deploy_dir, exist_ok=True)
+    target_path = os.path.join(deploy_dir, "news.json")
+    tmp_path = f"{target_path}.tmp"
+    shutil.copyfile(news_path, tmp_path)
+    os.replace(tmp_path, target_path)
+    return f"news.json wurde nach {deploy_dir} deployt."
 
 
 class NewsHandler(BaseHTTPRequestHandler):
@@ -290,31 +676,74 @@ class NewsHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        if self.path != "/api/news":
-            self.send_response(404)
-            self.end_headers()
-            return
-
         content_length = int(self.headers.get("Content-Length", "0") or "0")
         body = self.rfile.read(content_length)
-        try:
-            data = json.loads(body.decode("utf-8"))
-            if not isinstance(data, list):
-                raise ValueError("news.json must be a list")
-            items = normalize_items(data)
-            write_news(self.server.news_file, items)
-        except Exception as exc:
-            self.send_response(400)
+        raw_text = body.decode("utf-8") if body else ""
+
+        if self.path == "/api/news":
+            try:
+                data = json.loads(raw_text)
+                if not isinstance(data, list):
+                    raise ValueError("news.json must be a list")
+                items = normalize_items(data)
+                write_news(self.server.news_file, items)
+            except Exception as exc:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                payload = {"error": str(exc)}
+                self.wfile.write(json.dumps(payload).encode("utf-8"))
+                return
+
+            self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
-            payload = {"error": str(exc)}
-            self.wfile.write(json.dumps(payload).encode("utf-8"))
+            self.wfile.write(json.dumps({"message": "Gespeichert"}).encode("utf-8"))
             return
 
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
+        if self.path == "/api/git-commit-push":
+            try:
+                data = json.loads(raw_text or "{}")
+                if not isinstance(data, dict):
+                    raise ValueError("Ungültige Anfrage")
+                result_message = git_commit_and_push(
+                    self.server.news_file, data.get("message", "")
+                )
+            except Exception as exc:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                payload = {"error": str(exc)}
+                self.wfile.write(json.dumps(payload).encode("utf-8"))
+                return
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"message": result_message}).encode("utf-8"))
+            return
+
+        if self.path == "/api/deploy":
+            try:
+                result_message = deploy_news(
+                    self.server.news_file, self.server.deploy_dir
+                )
+            except Exception as exc:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                payload = {"error": str(exc)}
+                self.wfile.write(json.dumps(payload).encode("utf-8"))
+                return
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"message": result_message}).encode("utf-8"))
+            return
+
+        self.send_response(404)
         self.end_headers()
-        self.wfile.write(json.dumps({"message": "Gespeichert"}).encode("utf-8"))
 
     def log_message(self, fmt, *args):
         return
@@ -325,12 +754,19 @@ def main(argv):
     parser.add_argument("--file", default=DEFAULT_NEWS_FILE, help="Path to news.json")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host")
     parser.add_argument("--port", type=int, default=8765, help="Bind port")
+    parser.add_argument(
+        "--deploy-dir",
+        default=DEFAULT_DEPLOY_DIR,
+        help="Deploy target for news.json",
+    )
     args = parser.parse_args(argv)
 
     server = HTTPServer((args.host, args.port), NewsHandler)
     server.news_file = os.path.abspath(args.file)
+    server.deploy_dir = os.path.abspath(args.deploy_dir)
     print(f"News admin running on http://{args.host}:{args.port}")
     print(f"Editing: {server.news_file}")
+    print(f"Deploy dir: {server.deploy_dir}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
