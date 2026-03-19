@@ -9,6 +9,7 @@ server {
     include /etc/nginx/snippets/ohmoors-security.conf;
     include /etc/nginx/snippets/ohmoors-static-cache.conf;
     include /etc/nginx/snippets/ohmoors-deny.conf;
+    include /etc/nginx/snippets/ohmoors-news-admin.conf;
 
     location / {
         try_files $uri $uri/ =404;

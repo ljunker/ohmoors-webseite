@@ -1,0 +1,24 @@
+[Unit]
+Description=Ohmoors News Admin UI
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+# Run this as the deploy/admin user that owns the repo checkout,
+# has Git credentials for push, and can write to DEPLOY_DIR.
+User=lars
+Group=lars
+WorkingDirectory=/home/lars/ohmoors-webseite
+Environment=PYTHONUNBUFFERED=1
+Environment=NEWS_FILE=/home/lars/ohmoors-webseite/static/news.json
+Environment=DEPLOY_DIR=/var/www/ohmoors.de/html
+ExecStart=/usr/bin/env python3 /home/lars/ohmoors-webseite/scripts/news_admin.py --file ${NEWS_FILE} --host 127.0.0.1 --port 8765 --deploy-dir ${DEPLOY_DIR}
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=15s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

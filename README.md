@@ -53,6 +53,53 @@ Optional:
 python3 scripts/news_tui.py --file /pfad/zur/news.json
 ```
 
+### News Admin auf dem Server
+
+Empfohlener Betrieb:
+- `scripts/news_admin.py` per `systemd` als dauerhaften Dienst starten
+- Dienst nur auf `127.0.0.1:8765` binden
+- Zugriff ausschließlich über Nginx-Reverse-Proxy mit Passwortschutz
+- `Restart=on-failure` verwenden, damit der Dienst bei Fehlern automatisch neu startet
+
+Beispiel-Unit:
+- `ops/systemd/ohmoors-news-admin.service`
+
+Beispiel-Nginx-Snippet:
+- `ops/nginx/snippets/ohmoors-news-admin.conf`
+
+Beispiel-Installation auf dem Server:
+
+```bash
+sudo install -m 0644 ops/systemd/ohmoors-news-admin.service /etc/systemd/system/ohmoors-news-admin.service
+sudo install -m 0644 ops/nginx/snippets/ohmoors-news-admin.conf /etc/nginx/snippets/ohmoors-news-admin.conf
+sudo systemctl daemon-reload
+sudo systemctl enable --now ohmoors-news-admin.service
+sudo nginx -t
+sudo systemctl reload nginx
+sudo systemctl status ohmoors-news-admin.service --no-pager
+sudo journalctl -u ohmoors-news-admin.service -n 100 --no-pager
+```
+
+Passwortdatei für Admin-Zugang anlegen:
+
+```bash
+sudo apt-get install -y apache2-utils
+sudo htpasswd -c /etc/nginx/.htpasswd-ohmoors-admin ADMINNAME
+```
+
+Geschützte URL:
+
+```text
+https://ohmoor-squeezers.de/admin/news/
+```
+
+Wichtig:
+- Die `systemd`-Unit sollte unter dem Deploy-/Admin-Benutzer laufen, der den Repo-Checkout besitzt.
+- Dieser Benutzer braucht funktionierende Git-Credentials für `git push`.
+- Dieser Benutzer braucht Schreibrechte auf `/var/www/ohmoors.de/html`.
+- Für den aktuellen Server-Stand sind `User=lars`, `Group=lars` und `WorkingDirectory=/home/lars/ohmoors-webseite` vorgesehen.
+- Passe nur dann `User=`, `Group=`, `WorkingDirectory=`, `NEWS_FILE=` oder den Python-Pfad an, wenn dein Server davon abweicht.
+
 ## Server-Update nur fuer Events
 
 Script: `scripts/events-update-server.sh`
