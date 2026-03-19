@@ -66,10 +66,12 @@ Beispiel-Unit:
 
 Beispiel-Nginx-Snippet:
 - `ops/nginx/snippets/ohmoors-news-admin.conf`
+- `ops/nginx/ohmoors-news-admin-rate-limit.conf` fuer die globale Rate-Limit-Zone im `http`-Kontext
 
 Beispiel-Installation auf dem Server:
 
 ```bash
+sudo install -m 0644 ops/nginx/ohmoors-news-admin-rate-limit.conf /etc/nginx/conf.d/ohmoors-news-admin-rate-limit.conf
 sudo install -m 0644 ops/systemd/ohmoors-news-admin.service /etc/systemd/system/ohmoors-news-admin.service
 sudo install -m 0644 ops/nginx/snippets/ohmoors-news-admin.conf /etc/nginx/snippets/ohmoors-news-admin.conf
 sudo systemctl daemon-reload
@@ -84,7 +86,7 @@ Passwortdatei für Admin-Zugang anlegen:
 
 ```bash
 sudo apt-get install -y apache2-utils
-sudo htpasswd -c /etc/nginx/.htpasswd-ohmoors-admin ADMINNAME
+sudo htpasswd -B -C 15 -c /etc/nginx/.htpasswd-ohmoors-admin ADMINNAME
 ```
 
 Geschützte URL:
@@ -99,6 +101,7 @@ Wichtig:
 - Dieser Benutzer braucht Schreibrechte auf `/var/www/ohmoors.de/html`.
 - Für den aktuellen Server-Stand sind `User=lars`, `Group=lars` und `WorkingDirectory=/home/lars/ohmoors-webseite` vorgesehen.
 - Passe nur dann `User=`, `Group=`, `WorkingDirectory=`, `NEWS_FILE=` oder den Python-Pfad an, wenn dein Server davon abweicht.
+- Das Rate Limit ist aktuell auf `10` Requests pro Minute pro IP mit `burst=10` gesetzt und antwortet bei Überschreitung mit HTTP `418`. Das schützt gegen stumpfes Durchprobieren, ohne normale Admin-Nutzung unnötig zu stören.
 
 ## Server-Update nur fuer Events
 
