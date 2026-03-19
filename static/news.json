@@ -1,19 +1,13 @@
 [
   {
-    "date": "30. März 2026",
     "title": "Besuch bei den Crazy Bumblebees",
+    "date": "30. März 2026",
     "text": "Wie immer bei einem 5. Montag im Monat besuchen sich die Hamburgers, Crazy Bumblebees und die Ohmoor Squeezers gegenseitig. Diesmal sind wir zu Gast bei den Crazy Bumblebees, daher findet am 30. März bei uns kein Tanzen statt.\n\nWeitere Infos:\n* [Crazy Bumblebees](http://www.crazybumblebees.de/index.html)\n* [Tanztermine der Ohmoor Squeezers](https://ohmoor-squeezers.de/schedule.html)"
   },
   {
-    "date": "September 2026",
     "title": "Schnupperabend für Einsteiger",
     "flyer_text": "Flyer folgt",
+    "date": "September 2026",
     "text": "Wir planen einen offenen Abend für alle, die Square Dance ausprobieren möchten."
-  },
-  {
-    "published": false,
-    "date": "Kein Datum",
-    "title": "Test",
-    "text": "Das ist ein `Test`."
   }
 ]
