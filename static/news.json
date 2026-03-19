@@ -9,5 +9,11 @@
     "flyer_text": "Flyer folgt",
     "date": "September 2026",
     "text": "Wir planen einen offenen Abend für alle, die Square Dance ausprobieren möchten."
+  },
+  {
+    "published": false,
+    "title": "test",
+    "date": "kein datum",
+    "text": "testing"
   }
 ]
