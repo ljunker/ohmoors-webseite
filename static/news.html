@@ -58,18 +58,91 @@
           });
         }
 
-        function isPublished(item) {
+        function pad2(value) {
+          return String(value).padStart(2, "0");
+        }
+
+        function isLegacyDraft(item) {
           var value = item && item.published;
 
           if (value === false) {
-            return false;
+            return true;
           }
 
           if (typeof value === "string") {
-            return !/^(false|0|no|nein|off)$/i.test(value.trim());
+            return /^(false|0|no|nein|off)$/i.test(value.trim());
           }
 
-          return value !== false;
+          return false;
+        }
+
+        function parsePublicationDateKey(value) {
+          var text = String(value || "").trim();
+          var match;
+
+          if (!text) {
+            return "";
+          }
+
+          match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+          if (match) {
+            return match[1] + "-" + match[2] + "-" + match[3];
+          }
+
+          match = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(text);
+          if (match) {
+            return match[3] + "-" + pad2(match[2]) + "-" + pad2(match[1]);
+          }
+
+          return "";
+        }
+
+        function getBerlinTodayKey() {
+          var parts = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Europe/Berlin",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).formatToParts(new Date());
+          var values = {};
+
+          parts.forEach(function (part) {
+            if (part.type !== "literal") {
+              values[part.type] = part.value;
+            }
+          });
+
+          return values.year + "-" + values.month + "-" + values.day;
+        }
+
+        function isPublished(item) {
+          var fromRaw = item && item.published_from;
+          var untilRaw = item && item.published_until;
+          var from = parsePublicationDateKey(fromRaw);
+          var until = parsePublicationDateKey(untilRaw);
+          var hasWindow = String(fromRaw || "").trim() || String(untilRaw || "").trim();
+          var hasInvalidDate =
+            (String(fromRaw || "").trim() && !from) ||
+            (String(untilRaw || "").trim() && !until);
+          var today = getBerlinTodayKey();
+
+          if (hasInvalidDate) {
+            return false;
+          }
+
+          if (!hasWindow && isLegacyDraft(item)) {
+            return false;
+          }
+
+          if (from && today < from) {
+            return false;
+          }
+
+          if (until && today > until) {
+            return false;
+          }
+
+          return true;
         }
 
         function renderInlineMarkdown(value) {

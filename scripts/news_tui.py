@@ -16,6 +16,8 @@ FIELDS = [
     ("date", "Datum (z.B. 16. Feb. 2026)"),
     ("title", "Titel"),
     ("text", "Text"),
+    ("published_from", "Veröffentlicht ab (YYYY-MM-DD, optional)"),
+    ("published_until", "Veröffentlicht bis (YYYY-MM-DD, optional)"),
     ("flyer_url", "Flyer URL (optional)"),
     ("flyer_label", "Flyer Label (optional)"),
     ("flyer_text", "Flyer Text (ohne URL)"),
@@ -40,6 +42,38 @@ def is_published_value(value):
     return value is not False
 
 
+def parse_publication_date(value):
+    text = str(value or "").strip()
+    if not text:
+        return None
+
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            pass
+    return None
+
+
+def publication_state_label(item):
+    from_raw = str(item.get("published_from", "") or "").strip()
+    until_raw = str(item.get("published_until", "") or "").strip()
+    has_window = bool(from_raw or until_raw)
+    from_date = parse_publication_date(from_raw)
+    until_date = parse_publication_date(until_raw)
+    today = datetime.now().date()
+
+    if (from_raw and from_date is None) or (until_raw and until_date is None):
+        return " [Datum?]"
+    if not has_window and not is_published_value(item.get("published", True)):
+        return " [Entwurf]"
+    if from_date and today < from_date:
+        return " [Geplant]"
+    if until_date and today > until_date:
+        return " [Archiviert]"
+    return ""
+
+
 def normalize_items(items):
     allowed = {k for k, _ in FIELDS}
     normalized = []
@@ -47,8 +81,6 @@ def normalize_items(items):
         if not isinstance(item, dict):
             continue
         clean = {}
-        if not is_published_value(item.get("published", True)):
-            clean["published"] = False
         for key in allowed:
             value = item.get(key, "")
             if value is None:
@@ -56,6 +88,12 @@ def normalize_items(items):
             value = str(value).strip()
             if value:
                 clean[key] = value
+        if (
+            "published_from" not in clean
+            and "published_until" not in clean
+            and not is_published_value(item.get("published", True))
+        ):
+            clean["published"] = False
         normalized.append(clean)
     return normalized
 
@@ -111,18 +149,6 @@ def edit_item(stdscr, item):
         else:
             item[key] = value
         y += 3
-    stdscr.addstr(y - 1, 2, "-" * 40)
-    published_value = "j" if is_published_value(item.get("published", True)) else "n"
-    published = prompt_line(stdscr, y, "Veröffentlicht (j/n):", published_value)
-    if published == "":
-        pass
-    elif published == "-":
-        item.pop("published", None)
-    elif published.lower() in {"j", "ja", "y", "yes", "1"}:
-        item.pop("published", None)
-    elif published.lower() in {"n", "nein", "no", "0", "off"}:
-        item["published"] = False
-    y += 3
     stdscr.addstr(y, 2, "Speichern mit Enter...")
     stdscr.getch()
     return item
@@ -139,8 +165,7 @@ def draw_list(stdscr, items, index, status):
     else:
         for i, item in enumerate(items):
             line = f"{i+1}. {item.get('date','')} | {item.get('title','')}"
-            if not is_published_value(item.get("published", True)):
-                line += " [Entwurf]"
+            line += publication_state_label(item)
             if i == index:
                 stdscr.addstr(6 + i, 2, line[: w - 4], curses.A_REVERSE)
             else:

@@ -26,7 +26,7 @@ Standard: bearbeitet `static/news.json`.
 `text` in den News-Eintraegen unterstuetzt Markdown fuer Absätze, Listen, Links sowie einfache Hervorhebungen.
 Das Admin-UI zeigt beim Bearbeiten eine Live-Vorschau des Markdown-Renderings an.
 Zusätzlich gibt es Buttons für `Git add/commit/push` von `news.json` sowie für ein direktes Deploy von `news.json` ins Webroot.
-Mit `published: false` bleibt ein Eintrag als Entwurf gespeichert und erscheint nicht auf der öffentlichen News-Seite.
+Einträge können optional über `published_from` und `published_until` zeitlich gesteuert werden. Auf der Admin-Seite gibt es dafür Kalenderfelder; leer bedeutet sofort bzw. unbegrenzt sichtbar.
 Optional:
 
 ```bash

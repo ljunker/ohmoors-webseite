@@ -36,14 +36,12 @@ HTML_PAGE = r"""<!doctype html>
       .row { display: grid; grid-template-columns: 140px 1fr; gap: 12px; align-items: center; }
       .row + .row { margin-top: 10px; }
       input, textarea { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font: inherit; }
-      input[type="checkbox"] { width: auto; padding: 0; }
       textarea { min-height: 110px; resize: vertical; }
       .item-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
       .item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
       .list { display: grid; gap: 16px; margin-top: 16px; }
       .status { margin-top: 10px; font-weight: 600; }
       .field-note { margin-top: 6px; font-size: 13px; color: var(--muted); }
-      .toggle-field { display: flex; align-items: center; gap: 10px; font-weight: 600; }
       .preview-block { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
       .preview-label { margin: 0 0 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
       .preview-card { background: #fbfcfd; border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06); }
@@ -109,13 +107,17 @@ HTML_PAGE = r"""<!doctype html>
           </div>
         </div>
         <div class="row">
-          <label>Veröffentlicht</label>
+          <label>Veröffentlicht ab</label>
           <div>
-            <label class="toggle-field">
-              <input name="published" type="checkbox" checked />
-              <span>Artikel ist öffentlich sichtbar</span>
-            </label>
-            <div class="field-note">Nicht veröffentlichte Artikel bleiben hier als Entwurf sichtbar, erscheinen aber nicht auf der News-Seite.</div>
+            <input name="published_from" type="date" />
+            <div class="field-note">Leer = sofort sichtbar. Die Auswahl nutzt den Kalender des Browsers und wird als Datum gespeichert.</div>
+          </div>
+        </div>
+        <div class="row">
+          <label>Veröffentlicht bis</label>
+          <div>
+            <input name="published_until" type="date" />
+            <div class="field-note">Leer = unbegrenzt sichtbar. Mit beiden Feldern entsteht ein Veröffentlichungszeitraum.</div>
           </div>
         </div>
         <div class="row">
@@ -175,16 +177,88 @@ HTML_PAGE = r"""<!doctype html>
           });
         }
 
-        function isPublishedValue(value) {
+        function pad2(value) {
+          return String(value).padStart(2, "0");
+        }
+
+        function isLegacyDraftValue(value) {
           if (value === false) {
-            return false;
+            return true;
           }
 
           if (typeof value === "string") {
-            return !/^(false|0|no|nein|off)$/i.test(value.trim());
+            return /^(false|0|no|nein|off)$/i.test(value.trim());
           }
 
-          return value !== false;
+          return false;
+        }
+
+        function parsePublicationDateKey(value) {
+          var text = String(value || "").trim();
+          var match;
+
+          if (!text) {
+            return "";
+          }
+
+          match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+          if (match) {
+            return match[1] + "-" + match[2] + "-" + match[3];
+          }
+
+          match = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(text);
+          if (match) {
+            return match[3] + "-" + pad2(match[2]) + "-" + pad2(match[1]);
+          }
+
+          return "";
+        }
+
+        function toDateInputValue(value) {
+          return parsePublicationDateKey(value);
+        }
+
+        function getBerlinTodayKey() {
+          var parts = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Europe/Berlin",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).formatToParts(new Date());
+          var values = {};
+
+          parts.forEach(function (part) {
+            if (part.type !== "literal") {
+              values[part.type] = part.value;
+            }
+          });
+
+          return values.year + "-" + values.month + "-" + values.day;
+        }
+
+        function getPublicationState(fromValue, untilValue, legacyDraft) {
+          var hasWindow = String(fromValue || "").trim() || String(untilValue || "").trim();
+          var from = parsePublicationDateKey(fromValue);
+          var until = parsePublicationDateKey(untilValue);
+          var today = getBerlinTodayKey();
+
+          if ((String(fromValue || "").trim() && !from) || (String(untilValue || "").trim() && !until)) {
+            return "invalid";
+          }
+
+          if (!hasWindow && legacyDraft) {
+            return "draft";
+          }
+
+          if (from && today < from) {
+            return "scheduled";
+          }
+
+          if (until && today > until) {
+            return "expired";
+          }
+
+          return "live";
         }
 
         function setStatus(text, isError) {
@@ -347,19 +421,32 @@ HTML_PAGE = r"""<!doctype html>
             return node.querySelector("[name='" + name + "']").value.trim();
           }
 
-          var published = node.querySelector("[name='published']").checked;
           var date = v("date");
           var title = v("title");
           var text = v("text");
+          var publishedFrom = v("published_from");
+          var publishedUntil = v("published_until");
           var flyerUrl = sanitizeUrl(v("flyer_url"));
           var flyerLabel = v("flyer_label") || "Flyer (PDF)";
           var flyerText = v("flyer_text");
           var stateEl = node.querySelector("[data-preview='state']");
+          var publicationState = getPublicationState(
+            publishedFrom,
+            publishedUntil,
+            node.dataset.legacyDraft === "true"
+          );
+          var stateLabels = {
+            draft: "Entwurf",
+            scheduled: "Geplant",
+            expired: "Archiviert",
+            invalid: "Datum prüfen",
+          };
 
           node.querySelector("[data-preview='date']").textContent = date || "Datum";
           node.querySelector("[data-preview='title']").textContent = title || "Titel";
           node.querySelector("[data-preview='text']").innerHTML = renderMarkdown(text);
-          stateEl.hidden = published;
+          stateEl.hidden = publicationState === "live";
+          stateEl.textContent = stateLabels[publicationState] || "Entwurf";
           node.querySelector("[data-preview='actions']").innerHTML = flyerUrl
             ? '<span class="button-preview">' + escapeHtml(flyerLabel) + "</span>"
             : '<span class="muted">' + escapeHtml(flyerText || "Kein Flyer verlinkt") + "</span>";
@@ -367,18 +454,24 @@ HTML_PAGE = r"""<!doctype html>
 
         function createItem(item) {
           var node = template.content.firstElementChild.cloneNode(true);
+          var hasWindow = String(item.published_from || "").trim() || String(item.published_until || "").trim();
           node.querySelector("[name='date']").value = item.date || "";
           node.querySelector("[name='title']").value = item.title || "";
           node.querySelector("[name='text']").value = item.text || "";
-          node.querySelector("[name='published']").checked = isPublishedValue(item.published);
+          node.querySelector("[name='published_from']").value = toDateInputValue(item.published_from || "");
+          node.querySelector("[name='published_until']").value = toDateInputValue(item.published_until || "");
           node.querySelector("[name='flyer_url']").value = item.flyer_url || "";
           node.querySelector("[name='flyer_label']").value = item.flyer_label || "";
           node.querySelector("[name='flyer_text']").value = item.flyer_text || "";
+          node.dataset.legacyDraft = !hasWindow && isLegacyDraftValue(item.published) ? "true" : "false";
 
           Array.prototype.forEach.call(
             node.querySelectorAll("input, textarea"),
             function (field) {
               field.addEventListener("input", function () {
+                if (field.name === "published_from" || field.name === "published_until") {
+                  node.dataset.legacyDraft = "false";
+                }
                 updatePreview(node);
               });
             }
@@ -416,10 +509,16 @@ HTML_PAGE = r"""<!doctype html>
               title: v("title"),
               text: v("text"),
             };
-            if (!card.querySelector("[name='published']").checked) item.published = false;
+            var publishedFrom = v("published_from");
+            var publishedUntil = v("published_until");
             var flyerUrl = v("flyer_url");
             var flyerLabel = v("flyer_label");
             var flyerText = v("flyer_text");
+            if (publishedFrom) item.published_from = publishedFrom;
+            if (publishedUntil) item.published_until = publishedUntil;
+            if (!publishedFrom && !publishedUntil && card.dataset.legacyDraft === "true") {
+              item.published = false;
+            }
             if (flyerUrl) item.flyer_url = flyerUrl;
             if (flyerLabel) item.flyer_label = flyerLabel;
             if (flyerText) item.flyer_text = flyerText;
@@ -549,14 +648,21 @@ def is_published_value(value):
 
 
 def normalize_items(items):
-    allowed = {"date", "title", "text", "flyer_url", "flyer_label", "flyer_text"}
+    allowed = {
+        "date",
+        "title",
+        "text",
+        "flyer_url",
+        "flyer_label",
+        "flyer_text",
+        "published_from",
+        "published_until",
+    }
     normalized = []
     for item in items:
         if not isinstance(item, dict):
             continue
         clean = {}
-        if not is_published_value(item.get("published", True)):
-            clean["published"] = False
         for key in allowed:
             value = item.get(key, "")
             if value is None:
@@ -564,6 +670,12 @@ def normalize_items(items):
             value = str(value).strip()
             if value:
                 clean[key] = value
+        if (
+            "published_from" not in clean
+            and "published_until" not in clean
+            and not is_published_value(item.get("published", True))
+        ):
+            clean["published"] = False
         normalized.append(clean)
     return normalized
 
