@@ -22,3 +22,4 @@ fi
 
 "$PYTHON_BIN" "$PROJECT_ROOT/events.py"
 install -m 0644 "$PROJECT_ROOT/events.json" "$DEPLOY_DIR/events.json"
+echo "INFO: Updated events."
