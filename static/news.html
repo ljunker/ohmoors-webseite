@@ -24,9 +24,7 @@
       (function () {
         var statusEl = document.getElementById("news-status");
         var listEl = document.getElementById("news-list");
-        var debugMode = /^(1|true|yes|on)$/i.test(
-          new URLSearchParams(window.location.search).get("debug") || ""
-        );
+        var debugParam = new URLSearchParams(window.location.search).get("debug") || "";
 
         function escapeHtml(value) {
           return String(value || "")
@@ -97,6 +95,11 @@
             return match[3] + "-" + pad2(match[2]) + "-" + pad2(match[1]);
           }
 
+          match = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(text);
+          if (match) {
+            return match[3] + "-" + pad2(match[2]) + "-" + pad2(match[1]);
+          }
+
           return "";
         }
 
@@ -118,6 +121,41 @@
           return values.year + "-" + values.month + "-" + values.day;
         }
 
+        function formatDateKeyForDebug(value) {
+          var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+          if (!match) {
+            return "";
+          }
+
+          return Number(match[3]) + "." + Number(match[2]) + "." + match[1];
+        }
+
+        function getDebugState(value) {
+          var text = String(value || "").trim();
+          var simulatedDate = parsePublicationDateKey(text);
+
+          if (/^(1|true|yes|on)$/i.test(text)) {
+            return {
+              showAll: true,
+              simulatedDate: "",
+            };
+          }
+
+          if (simulatedDate) {
+            return {
+              showAll: false,
+              simulatedDate: simulatedDate,
+            };
+          }
+
+          return {
+            showAll: false,
+            simulatedDate: "",
+          };
+        }
+
+        var debugState = getDebugState(debugParam);
+
         function isPublished(item) {
           var fromRaw = item && item.published_from;
           var untilRaw = item && item.published_until;
@@ -127,7 +165,7 @@
           var hasInvalidDate =
             (String(fromRaw || "").trim() && !from) ||
             (String(untilRaw || "").trim() && !until);
-          var today = getBerlinTodayKey();
+          var today = debugState.simulatedDate || getBerlinTodayKey();
 
           if (hasInvalidDate) {
             return false;
@@ -264,10 +302,12 @@
         }
 
         function render(newsItems) {
-          var publishedItems = debugMode ? newsItems : newsItems.filter(isPublished);
+          var publishedItems = debugState.showAll ? newsItems : newsItems.filter(isPublished);
 
           if (!publishedItems.length) {
-            statusEl.textContent = "";
+            statusEl.textContent = debugState.simulatedDate
+              ? "Debug-Datum aktiv: " + formatDateKeyForDebug(debugState.simulatedDate) + "."
+              : "";
             listEl.innerHTML = "<p>Keine News vorhanden.</p>";
             return;
           }
@@ -306,8 +346,10 @@
               );
             })
             .join("");
-          statusEl.textContent = debugMode
+          statusEl.textContent = debugState.showAll
             ? "Debug-Modus aktiv: alle News werden angezeigt."
+            : debugState.simulatedDate
+              ? "Debug-Datum aktiv: " + formatDateKeyForDebug(debugState.simulatedDate) + "."
             : "";
         }
 
