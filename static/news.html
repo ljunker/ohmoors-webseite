@@ -24,6 +24,9 @@
       (function () {
         var statusEl = document.getElementById("news-status");
         var listEl = document.getElementById("news-list");
+        var debugMode = /^(1|true|yes|on)$/i.test(
+          new URLSearchParams(window.location.search).get("debug") || ""
+        );
 
         function escapeHtml(value) {
           return String(value || "")
@@ -261,7 +264,7 @@
         }
 
         function render(newsItems) {
-          var publishedItems = newsItems.filter(isPublished);
+          var publishedItems = debugMode ? newsItems : newsItems.filter(isPublished);
 
           if (!publishedItems.length) {
             statusEl.textContent = "";
@@ -303,7 +306,9 @@
               );
             })
             .join("");
-          statusEl.textContent = "";
+          statusEl.textContent = debugMode
+            ? "Debug-Modus aktiv: alle News werden angezeigt."
+            : "";
         }
 
         fetch("news.json", { cache: "no-store" })
