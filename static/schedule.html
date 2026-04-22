@@ -125,7 +125,8 @@
           if (!location) {
             return "";
           }
-          return String(location)
+          var rawLocation = String(location).trim();
+          var locationHtml = rawLocation
             .split(",")
             .map(function (part) {
               return escapeHtml(part.trim());
@@ -134,6 +135,18 @@
               return part.length > 0;
             })
             .join("<br />");
+
+          if (!locationHtml) {
+            return "";
+          }
+
+          return (
+            '<a class="map-link" href="https://www.google.com/maps/search/?api=1&query=' +
+            encodeURIComponent(rawLocation) +
+            '" target="_blank" rel="noopener noreferrer">' +
+            locationHtml +
+            "</a>"
+          );
         }
 
         function renderRows(events) {

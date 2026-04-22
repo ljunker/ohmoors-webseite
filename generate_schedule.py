@@ -3,6 +3,7 @@ import json
 import re
 import sys
 from datetime import datetime, timezone
+from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
 
 
@@ -87,6 +88,22 @@ def clean_no_dance_reason(details):
     return cleaned
 
 
+def render_location(raw_location):
+    if not raw_location:
+        return ""
+    location_text = raw_location.strip()
+    location_parts = [html.escape(p.strip()) for p in location_text.split(",")]
+    location_html = "<br />".join([p for p in location_parts if p])
+    if not location_html:
+        return ""
+    query = html.escape(quote_plus(location_text), quote=True)
+    return (
+        f"<a class=\"map-link\" "
+        f"href=\"https://www.google.com/maps/search/?api=1&query={query}\" "
+        f"target=\"_blank\" rel=\"noopener noreferrer\">{location_html}</a>"
+    )
+
+
 def render(events, nav_html):
     title = "Ohmoor Squeezers e.V. - Clubabende"
     rows = []
@@ -110,12 +127,7 @@ def render(events, nav_html):
             details = f"<span class=\"badge no-dance\">Kein Tanzen</span>{reason_text}"
         else:
             details = html.escape(raw_details)
-        raw_location = e.get("location", "")
-        if raw_location:
-            location_parts = [html.escape(p.strip()) for p in raw_location.split(",")]
-            location = "<br />".join([p for p in location_parts if p])
-        else:
-            location = ""
+        location = render_location(e.get("location", "") or "")
         caller = html.escape(e.get("caller", ""))
         date_line = date if no_dance else f"{date} | {time}-{end_time}"
         row_class = (
