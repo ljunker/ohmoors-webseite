@@ -22,15 +22,16 @@ Lokales Admin-UI:
 python3 scripts/news_admin.py
 ```
 
-Standard: bearbeitet `static/news.json`.
+Standard: bearbeitet `static/news.json` und die Vorlagen in `static/news_templates.json`.
 `text` in den News-Eintraegen unterstuetzt Markdown fuer Absätze, Listen, Links sowie einfache Hervorhebungen.
 Das Admin-UI zeigt beim Bearbeiten eine Live-Vorschau des Markdown-Renderings an.
-Zusätzlich gibt es Buttons für `Git add/commit/push` von `news.json` sowie für ein direktes Deploy von `news.json` ins Webroot.
+Vorlagen können separat gepflegt und per Button in die News kopiert werden; bestehende News lassen sich ebenfalls als Vorlage kopieren.
+Zusätzlich gibt es Buttons für `Git add/commit/push` von `news.json` und `news_templates.json` sowie für ein direktes Deploy von `news.json` ins Webroot.
 Einträge können optional über `published_from` und `published_until` zeitlich gesteuert werden. Auf der Admin-Seite gibt es dafür Kalenderfelder; leer bedeutet sofort bzw. unbegrenzt sichtbar.
 Optional:
 
 ```bash
-python3 scripts/news_admin.py --file /pfad/zur/news.json --host 127.0.0.1 --port 8765
+python3 scripts/news_admin.py --file /pfad/zur/news.json --templates-file /pfad/zur/news_templates.json --host 127.0.0.1 --port 8765
 ```
 
 Optional mit abweichendem Deploy-Ziel:
@@ -100,7 +101,7 @@ Wichtig:
 - Dieser Benutzer braucht funktionierende Git-Credentials für `git push`.
 - Dieser Benutzer braucht Schreibrechte auf `/var/www/ohmoors.de/html`.
 - Für den aktuellen Server-Stand sind `User=lars`, `Group=lars` und `WorkingDirectory=/home/lars/ohmoors-webseite` vorgesehen.
-- Passe nur dann `User=`, `Group=`, `WorkingDirectory=`, `NEWS_FILE=` oder den Python-Pfad an, wenn dein Server davon abweicht.
+- Passe nur dann `User=`, `Group=`, `WorkingDirectory=`, `NEWS_FILE=`, `NEWS_TEMPLATES_FILE=` oder den Python-Pfad an, wenn dein Server davon abweicht.
 - Das Rate Limit ist aktuell auf `10` Requests pro Minute pro IP mit `burst=10` gesetzt und antwortet bei Überschreitung mit HTTP `418`. Das schützt gegen stumpfes Durchprobieren, ohne normale Admin-Nutzung unnötig zu stören.
 
 ## Server-Update nur fuer Events

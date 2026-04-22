@@ -12,8 +12,9 @@ Group=lars
 WorkingDirectory=/home/lars/ohmoors-webseite
 Environment=PYTHONUNBUFFERED=1
 Environment=NEWS_FILE=/home/lars/ohmoors-webseite/static/news.json
+Environment=NEWS_TEMPLATES_FILE=/home/lars/ohmoors-webseite/static/news_templates.json
 Environment=DEPLOY_DIR=/var/www/ohmoors.de/html
-ExecStart=/usr/bin/env python3 /home/lars/ohmoors-webseite/scripts/news_admin.py --file ${NEWS_FILE} --host 127.0.0.1 --port 8765 --deploy-dir ${DEPLOY_DIR}
+ExecStart=/usr/bin/env python3 /home/lars/ohmoors-webseite/scripts/news_admin.py --file ${NEWS_FILE} --templates-file ${NEWS_TEMPLATES_FILE} --host 127.0.0.1 --port 8765 --deploy-dir ${DEPLOY_DIR}
 Restart=on-failure
 RestartSec=5s
 TimeoutStopSec=15s

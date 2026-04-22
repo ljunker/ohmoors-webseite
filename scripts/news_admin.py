@@ -11,6 +11,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_NEWS_FILE = os.path.join(BASE_DIR, "static", "news.json")
+DEFAULT_TEMPLATES_FILE = os.path.join(BASE_DIR, "static", "news_templates.json")
 DEFAULT_DEPLOY_DIR = "/var/www/ohmoors.de/html"
 
 
@@ -39,6 +40,9 @@ HTML_PAGE = r"""<!doctype html>
       textarea { min-height: 110px; resize: vertical; }
       .item-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
       .item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+      .section-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-top: 28px; }
+      .section-header h2 { margin: 0; font-size: 22px; }
+      .section-header p { margin: 6px 0 0; }
       .list { display: grid; gap: 16px; margin-top: 16px; }
       .status { margin-top: 10px; font-weight: 600; }
       .field-note { margin-top: 6px; font-size: 13px; color: var(--muted); }
@@ -68,24 +72,44 @@ HTML_PAGE = r"""<!doctype html>
       <header>
         <div>
           <h1>News Admin</h1>
-          <p class="muted">Bearbeite Einträge in news.json</p>
+          <p class="muted">Bearbeite Einträge in news.json und Vorlagen in news_templates.json</p>
         </div>
         <div class="controls">
-          <button id="add-btn">Neu</button>
-          <button id="save-btn" class="primary">Speichern</button>
+          <button id="add-news-btn">News neu</button>
+          <button id="add-template-btn">Vorlage neu</button>
+          <button id="save-btn" class="primary">Alles speichern</button>
           <button id="git-btn">Git Commit & Push</button>
           <button id="deploy-btn">Deploy news.json</button>
         </div>
       </header>
       <div id="status" class="status muted"></div>
-      <div id="list" class="list"></div>
+      <section>
+        <div class="section-header">
+          <div>
+            <h2>News</h2>
+            <p class="muted">Diese Einträge erscheinen auf der öffentlichen News-Seite.</p>
+          </div>
+        </div>
+        <div id="news-list" class="list"></div>
+      </section>
+      <section>
+        <div class="section-header">
+          <div>
+            <h2>Vorlagen</h2>
+            <p class="muted">Vorlagen werden separat gespeichert und können in die News kopiert werden.</p>
+          </div>
+        </div>
+        <div id="template-list" class="list"></div>
+      </section>
     </div>
 
     <template id="item-template">
       <div class="card">
         <div class="item-header">
-          <strong>News</strong>
+          <strong data-role="kind-label">News</strong>
           <div class="item-actions">
+            <button data-action="copy-to-news" data-role="template-action">In News kopieren</button>
+            <button data-action="copy-to-template" data-role="news-action">Als Vorlage</button>
             <button data-action="up">Hoch</button>
             <button data-action="down">Runter</button>
             <button data-action="delete" class="danger">Löschen</button>
@@ -149,9 +173,11 @@ HTML_PAGE = r"""<!doctype html>
 
     <script>
       (function () {
-        var listEl = document.getElementById("list");
+        var newsListEl = document.getElementById("news-list");
+        var templateListEl = document.getElementById("template-list");
         var statusEl = document.getElementById("status");
-        var addBtn = document.getElementById("add-btn");
+        var addNewsBtn = document.getElementById("add-news-btn");
+        var addTemplateBtn = document.getElementById("add-template-btn");
         var saveBtn = document.getElementById("save-btn");
         var gitBtn = document.getElementById("git-btn");
         var deployBtn = document.getElementById("deploy-btn");
@@ -452,9 +478,42 @@ HTML_PAGE = r"""<!doctype html>
             : '<span class="muted">' + escapeHtml(flyerText || "Kein Flyer verlinkt") + "</span>";
         }
 
-        function createItem(item) {
+        function readItem(card) {
+          function v(name) {
+            return card.querySelector("[name='" + name + "']").value.trim();
+          }
+
+          var item = {
+            date: v("date"),
+            title: v("title"),
+            text: v("text"),
+          };
+          var publishedFrom = v("published_from");
+          var publishedUntil = v("published_until");
+          var flyerUrl = v("flyer_url");
+          var flyerLabel = v("flyer_label");
+          var flyerText = v("flyer_text");
+
+          if (publishedFrom) item.published_from = publishedFrom;
+          if (publishedUntil) item.published_until = publishedUntil;
+          if (!publishedFrom && !publishedUntil && card.dataset.legacyDraft === "true") {
+            item.published = false;
+          }
+          if (flyerUrl) item.flyer_url = flyerUrl;
+          if (flyerLabel) item.flyer_label = flyerLabel;
+          if (flyerText) item.flyer_text = flyerText;
+
+          return item;
+        }
+
+        function createItem(item, kind) {
+          kind = kind || "news";
           var node = template.content.firstElementChild.cloneNode(true);
           var hasWindow = String(item.published_from || "").trim() || String(item.published_until || "").trim();
+          node.dataset.kind = kind;
+          node.querySelector("[data-role='kind-label']").textContent = kind === "template" ? "Vorlage" : "News";
+          node.querySelector("[data-role='template-action']").hidden = kind !== "template";
+          node.querySelector("[data-role='news-action']").hidden = kind !== "news";
           node.querySelector("[name='date']").value = item.date || "";
           node.querySelector("[name='title']").value = item.title || "";
           node.querySelector("[name='text']").value = item.text || "";
@@ -484,13 +543,19 @@ HTML_PAGE = r"""<!doctype html>
             var card = node;
             if (action === "delete") {
               card.remove();
+            } else if (action === "copy-to-news") {
+              newsListEl.appendChild(createItem(readItem(card), "news"));
+              setStatus("Vorlage in News kopiert. Speichern nicht vergessen.");
+            } else if (action === "copy-to-template") {
+              templateListEl.appendChild(createItem(readItem(card), "template"));
+              setStatus("News als Vorlage kopiert. Speichern nicht vergessen.");
             } else if (action === "up") {
               if (card.previousElementSibling) {
-                listEl.insertBefore(card, card.previousElementSibling);
+                card.parentElement.insertBefore(card, card.previousElementSibling);
               }
             } else if (action === "down") {
               if (card.nextElementSibling) {
-                listEl.insertBefore(card.nextElementSibling, card);
+                card.parentElement.insertBefore(card.nextElementSibling, card);
               }
             }
           });
@@ -499,37 +564,14 @@ HTML_PAGE = r"""<!doctype html>
           return node;
         }
 
-        function readItems() {
-          return Array.prototype.map.call(listEl.children, function (card) {
-            function v(name) {
-              return card.querySelector("[name='" + name + "']").value.trim();
-            }
-            var item = {
-              date: v("date"),
-              title: v("title"),
-              text: v("text"),
-            };
-            var publishedFrom = v("published_from");
-            var publishedUntil = v("published_until");
-            var flyerUrl = v("flyer_url");
-            var flyerLabel = v("flyer_label");
-            var flyerText = v("flyer_text");
-            if (publishedFrom) item.published_from = publishedFrom;
-            if (publishedUntil) item.published_until = publishedUntil;
-            if (!publishedFrom && !publishedUntil && card.dataset.legacyDraft === "true") {
-              item.published = false;
-            }
-            if (flyerUrl) item.flyer_url = flyerUrl;
-            if (flyerLabel) item.flyer_label = flyerLabel;
-            if (flyerText) item.flyer_text = flyerText;
-            return item;
-          });
+        function readItems(listEl) {
+          return Array.prototype.map.call(listEl.children, readItem);
         }
 
-        function render(items) {
+        function renderList(listEl, items, kind) {
           listEl.innerHTML = "";
           items.forEach(function (item) {
-            listEl.appendChild(createItem(item));
+            listEl.appendChild(createItem(item, kind));
           });
         }
 
@@ -543,11 +585,17 @@ HTML_PAGE = r"""<!doctype html>
 
         function load() {
           setStatus("Lade ...");
-          fetch("api/news", { cache: "no-store" })
-            .then(parseJsonResponse)
-            .then(function (data) {
-              if (!Array.isArray(data)) throw new Error("news.json hat kein Array-Format");
-              render(data);
+          Promise.all([
+            fetch("api/news", { cache: "no-store" }).then(parseJsonResponse),
+            fetch("api/templates", { cache: "no-store" }).then(parseJsonResponse),
+          ])
+            .then(function (results) {
+              var news = results[0];
+              var templates = results[1];
+              if (!Array.isArray(news)) throw new Error("news.json hat kein Array-Format");
+              if (!Array.isArray(templates)) throw new Error("news_templates.json hat kein Array-Format");
+              renderList(newsListEl, news, "news");
+              renderList(templateListEl, templates, "template");
               setStatus("");
             })
             .catch(function (err) {
@@ -555,12 +603,19 @@ HTML_PAGE = r"""<!doctype html>
             });
         }
 
+        function saveNews() {
+          return postJson("api/news", readItems(newsListEl));
+        }
+
+        function saveTemplates() {
+          return postJson("api/templates", readItems(templateListEl));
+        }
+
         function save() {
-          var payload = readItems();
           setStatus("Speichere ...");
-          return postJson("api/news", payload)
+          return Promise.all([saveNews(), saveTemplates()])
             .then(function (data) {
-              setStatus(data.message || "Gespeichert");
+              setStatus("Gespeichert");
               return data;
             })
             .catch(function (err) {
@@ -570,7 +625,10 @@ HTML_PAGE = r"""<!doctype html>
         }
 
         function commitAndPush() {
-          var message = window.prompt("Commit-Message", "Update news.json");
+          var message = window.prompt(
+            "Commit-Message",
+            "News aktualisieren\n\n- news.json aktualisiert\n- news_templates.json aktualisiert"
+          );
           if (message === null) {
             return;
           }
@@ -614,8 +672,11 @@ HTML_PAGE = r"""<!doctype html>
             });
         }
 
-        addBtn.addEventListener("click", function () {
-          listEl.appendChild(createItem({}));
+        addNewsBtn.addEventListener("click", function () {
+          newsListEl.appendChild(createItem({}, "news"));
+        });
+        addTemplateBtn.addEventListener("click", function () {
+          templateListEl.appendChild(createItem({}, "template"));
         });
         saveBtn.addEventListener("click", save);
         gitBtn.addEventListener("click", commitAndPush);
@@ -629,14 +690,22 @@ HTML_PAGE = r"""<!doctype html>
 """
 
 
-def load_news(path):
+def load_items(path, label):
     if not os.path.exists(path):
         return []
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, list):
-        raise ValueError("news.json must be a list")
+        raise ValueError(f"{label} must be a list")
     return data
+
+
+def load_news(path):
+    return load_items(path, "news.json")
+
+
+def load_templates(path):
+    return load_items(path, "news_templates.json")
 
 
 def is_published_value(value):
@@ -680,7 +749,7 @@ def normalize_items(items):
     return normalized
 
 
-def write_news(path, items):
+def write_items(path, items):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     if os.path.exists(path):
         ts = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -691,6 +760,14 @@ def write_news(path, items):
         json.dump(items, f, ensure_ascii=False, indent=2)
         f.write("\n")
     os.replace(tmp_path, path)
+
+
+def write_news(path, items):
+    write_items(path, items)
+
+
+def write_templates(path, items):
+    write_items(path, items)
 
 
 def run_command(cmd, cwd):
@@ -715,21 +792,29 @@ def find_git_root(path):
     return os.path.realpath(result.stdout.strip())
 
 
-def git_commit_and_push(news_path, message):
+def git_commit_and_push(news_path, templates_path, message):
     message = str(message or "").strip()
     if not message:
         raise ValueError("Commit-Message fehlt")
 
     news_path = os.path.realpath(news_path)
+    templates_path = os.path.realpath(templates_path)
     repo_root = find_git_root(news_path)
-    common_root = os.path.commonpath([news_path, repo_root])
-    if common_root != repo_root:
-        raise RuntimeError("news.json liegt nicht im Git-Repository")
+    for path, label in (
+        (news_path, "news.json"),
+        (templates_path, "news_templates.json"),
+    ):
+        common_root = os.path.commonpath([path, repo_root])
+        if common_root != repo_root:
+            raise RuntimeError(f"{label} liegt nicht im Git-Repository")
 
-    rel_path = os.path.relpath(news_path, repo_root)
-    run_command(["git", "add", "--", rel_path], cwd=repo_root)
+    rel_paths = [
+        os.path.relpath(news_path, repo_root),
+        os.path.relpath(templates_path, repo_root),
+    ]
+    run_command(["git", "add", "--", *rel_paths], cwd=repo_root)
     diff_result = subprocess.run(
-        ["git", "diff", "--cached", "--name-only", "--", rel_path],
+        ["git", "diff", "--cached", "--name-only", "--", *rel_paths],
         cwd=repo_root,
         capture_output=True,
         text=True,
@@ -738,14 +823,14 @@ def git_commit_and_push(news_path, message):
         message_text = (diff_result.stderr or diff_result.stdout or "").strip()
         raise RuntimeError(message_text or "Git-Status konnte nicht geprüft werden")
     if not diff_result.stdout.strip():
-        return "Keine Änderungen in news.json zum Committen."
+        return "Keine Änderungen in news.json oder news_templates.json zum Committen."
 
     run_command(
-        ["git", "commit", "--no-gpg-sign", "-m", message, "--only", "--", rel_path],
+        ["git", "commit", "--no-gpg-sign", "-m", message, "--only", "--", *rel_paths],
         cwd=repo_root,
     )
     run_command(["git", "push"], cwd=repo_root)
-    return "news.json wurde committed und gepusht."
+    return "news.json und news_templates.json wurden committed und gepusht."
 
 
 def deploy_news(news_path, deploy_dir):
@@ -771,6 +856,22 @@ class NewsHandler(BaseHTTPRequestHandler):
         if self.path == "/api/news":
             try:
                 data = load_news(self.server.news_file)
+            except Exception as exc:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                payload = {"error": str(exc)}
+                self.wfile.write(json.dumps(payload).encode("utf-8"))
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"))
+            return
+
+        if self.path == "/api/templates":
+            try:
+                data = load_templates(self.server.templates_file)
             except Exception as exc:
                 self.send_response(500)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -813,13 +914,36 @@ class NewsHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"message": "Gespeichert"}).encode("utf-8"))
             return
 
+        if self.path == "/api/templates":
+            try:
+                data = json.loads(raw_text)
+                if not isinstance(data, list):
+                    raise ValueError("news_templates.json must be a list")
+                items = normalize_items(data)
+                write_templates(self.server.templates_file, items)
+            except Exception as exc:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                payload = {"error": str(exc)}
+                self.wfile.write(json.dumps(payload).encode("utf-8"))
+                return
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"message": "Vorlagen gespeichert"}).encode("utf-8"))
+            return
+
         if self.path == "/api/git-commit-push":
             try:
                 data = json.loads(raw_text or "{}")
                 if not isinstance(data, dict):
                     raise ValueError("Ungültige Anfrage")
                 result_message = git_commit_and_push(
-                    self.server.news_file, data.get("message", "")
+                    self.server.news_file,
+                    self.server.templates_file,
+                    data.get("message", ""),
                 )
             except Exception as exc:
                 self.send_response(400)
@@ -862,8 +986,15 @@ class NewsHandler(BaseHTTPRequestHandler):
 
 
 def main(argv):
-    parser = argparse.ArgumentParser(description="CRUD UI for static/news.json")
+    parser = argparse.ArgumentParser(
+        description="CRUD UI for static/news.json and static/news_templates.json"
+    )
     parser.add_argument("--file", default=DEFAULT_NEWS_FILE, help="Path to news.json")
+    parser.add_argument(
+        "--templates-file",
+        default=DEFAULT_TEMPLATES_FILE,
+        help="Path to news_templates.json",
+    )
     parser.add_argument("--host", default="127.0.0.1", help="Bind host")
     parser.add_argument("--port", type=int, default=8765, help="Bind port")
     parser.add_argument(
@@ -875,9 +1006,11 @@ def main(argv):
 
     server = HTTPServer((args.host, args.port), NewsHandler)
     server.news_file = os.path.abspath(args.file)
+    server.templates_file = os.path.abspath(args.templates_file)
     server.deploy_dir = os.path.abspath(args.deploy_dir)
     print(f"News admin running on http://{args.host}:{args.port}")
     print(f"Editing: {server.news_file}")
+    print(f"Templates: {server.templates_file}")
     print(f"Deploy dir: {server.deploy_dir}")
     try:
         server.serve_forever()
