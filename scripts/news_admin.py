@@ -506,7 +506,6 @@ HTML_PAGE = r"""<!doctype html>
         <div class="topbar-main">
           <div>
             <h1>News Admin</h1>
-            <p class="intro muted">Navigation links, Bearbeitung rechts. Auf dem Handy steckt die Eintragsliste im Menü.</p>
           </div>
           <button id="nav-toggle" class="mobile-nav-toggle" type="button" aria-label="Eintragsmenü öffnen" aria-expanded="false" aria-controls="sidebar">
             <span class="mobile-nav-toggle-bars" aria-hidden="true"><span></span><span></span><span></span></span>
@@ -527,7 +526,6 @@ HTML_PAGE = r"""<!doctype html>
           <div class="sidebar-head">
             <div>
               <h2>Einträge</h2>
-              <p class="sidebar-note muted">Wähle einen Eintrag aus. Angezeigt werden News und Vorlagen mit ihrem Titel.</p>
             </div>
             <button id="nav-close" class="nav-close" type="button" aria-label="Eintragsmenü schließen">
               <span class="nav-close-bars" aria-hidden="true"><span></span><span></span></span>
