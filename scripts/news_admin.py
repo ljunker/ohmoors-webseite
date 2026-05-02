@@ -22,57 +22,495 @@ HTML_PAGE = r"""<!doctype html>
     <title>News Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-      :root { color-scheme: light; --bg: #f6f7fb; --surface: #fff; --text: #111827; --muted: #6b7280; --border: #e5e7eb; --accent: #419545; }
+      :root {
+        color-scheme: light;
+        --bg: #f3f5f8;
+        --surface: #ffffff;
+        --surface-soft: #f8fafc;
+        --text: #111827;
+        --muted: #6b7280;
+        --border: #dbe2ea;
+        --accent: #419545;
+        --accent-soft: #edf7ee;
+        --danger-bg: #fff1f2;
+        --danger-text: #9f1239;
+      }
       * { box-sizing: border-box; }
-      body { margin: 0; font-family: "Manrope","Avenir Next","Segoe UI","Helvetica Neue",Arial,sans-serif; color: var(--text); background: var(--bg); }
-      .container { width: min(1100px, 92vw); margin: 32px auto 64px; }
-      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-      h1 { margin: 0; font-size: 28px; }
-      .muted { color: var(--muted); }
-      .controls { display: flex; gap: 8px; flex-wrap: wrap; }
-      button { border: 1px solid var(--border); background: var(--surface); padding: 8px 12px; border-radius: 10px; cursor: pointer; font-weight: 600; }
-      button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-      button.danger { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-      .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-top: 16px; }
-      .row { display: grid; grid-template-columns: 140px 1fr; gap: 12px; align-items: center; }
-      .row + .row { margin-top: 10px; }
-      input, textarea { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font: inherit; }
-      textarea { min-height: 110px; resize: vertical; }
-      .item-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-      .item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-      .section-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-top: 28px; }
-      .section-header h2 { margin: 0; font-size: 22px; }
-      .section-header p { margin: 6px 0 0; }
-      .list { display: grid; gap: 16px; margin-top: 16px; }
-      .status { margin-top: 10px; font-weight: 600; }
-      .field-note { margin-top: 6px; font-size: 13px; color: var(--muted); }
-      .preview-block { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
-      .preview-label { margin: 0 0 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-      .preview-card { background: #fbfcfd; border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06); }
-      .preview-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-      .preview-meta { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-      .preview-state { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 999px; border: 1px solid #f5c2c7; background: #fff1f2; color: #9f1239; font-size: 12px; font-weight: 700; }
-      .preview-card h2 { margin: 8px 0 8px; font-size: 20px; }
+      body {
+        margin: 0;
+        font-family: "Manrope", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        color: var(--text);
+        background: var(--bg);
+      }
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+      .container {
+        width: min(1240px, 96vw);
+        margin: 20px auto 36px;
+      }
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .topbar-main {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+      h2,
+      h3 {
+        margin: 0;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .intro {
+        margin: 6px 0 0;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .mobile-nav-toggle,
+      .nav-close {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        padding: 0;
+      }
+      .mobile-nav-toggle-bars,
+      .nav-close-bars {
+        display: grid;
+        gap: 4px;
+        width: 18px;
+      }
+      .mobile-nav-toggle-bars span,
+      .nav-close-bars span {
+        display: block;
+        height: 2px;
+        background: currentColor;
+        border-radius: 999px;
+      }
+      .nav-close-bars {
+        position: relative;
+        width: 18px;
+        height: 18px;
+        display: block;
+      }
+      .nav-close-bars span {
+        position: absolute;
+        top: 8px;
+        left: 0;
+        width: 18px;
+      }
+      .nav-close-bars span:first-child {
+        transform: rotate(45deg);
+      }
+      .nav-close-bars span:last-child {
+        transform: rotate(-45deg);
+      }
+      button {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      button.danger {
+        background: var(--danger-bg);
+        color: var(--danger-text);
+        border-color: #fecdd3;
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+      .status {
+        margin-top: 12px;
+        min-height: 24px;
+        font-weight: 600;
+      }
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+        gap: 16px;
+        margin-top: 12px;
+        align-items: start;
+      }
+      .sidebar,
+      .editor-shell {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      .sidebar {
+        overflow: hidden;
+      }
+      .sidebar-head,
+      .editor-head {
+        padding: 16px 16px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .sidebar-note,
+      .editor-note {
+        margin: 6px 0 0;
+        font-size: 14px;
+      }
+      .sidebar-body {
+        padding: 12px;
+        display: grid;
+        gap: 14px;
+      }
+      .nav-section {
+        display: grid;
+        gap: 8px;
+      }
+      .nav-section-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .nav-section-head h3 {
+        font-size: 16px;
+      }
+      .nav-count {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .nav-list {
+        display: grid;
+        gap: 6px;
+      }
+      .nav-item {
+        width: 100%;
+        text-align: left;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: var(--surface-soft);
+      }
+      .nav-item.active {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .nav-title {
+        display: block;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.3;
+      }
+      .nav-meta {
+        display: block;
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--muted);
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.35;
+      }
+      .nav-empty {
+        margin: 0;
+        padding: 12px;
+        border: 1px dashed var(--border);
+        border-radius: 8px;
+        color: var(--muted);
+        background: var(--surface-soft);
+        font-size: 14px;
+      }
+      .editor-shell {
+        min-height: 640px;
+      }
+      .nav-backdrop {
+        display: none;
+      }
+      .editor-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .editor-tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 0 10px;
+        border-radius: 999px;
+        background: var(--surface-soft);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .editor-body {
+        padding: 16px;
+      }
+      .card {
+        display: grid;
+        gap: 16px;
+      }
+      .item-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .item-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 140px minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+      }
+      label {
+        padding-top: 10px;
+        font-weight: 600;
+      }
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #fff;
+        color: var(--text);
+      }
+      textarea {
+        min-height: 200px;
+        resize: vertical;
+      }
+      .field-note {
+        margin-top: 6px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .preview-block {
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .preview-label {
+        margin: 0 0 10px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .preview-card {
+        background: var(--surface-soft);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 18px 20px;
+      }
+      .preview-meta-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .preview-meta {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .preview-state {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 0 10px;
+        border-radius: 999px;
+        border: 1px solid #fbcfe8;
+        background: var(--danger-bg);
+        color: var(--danger-text);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .preview-card h2 {
+        margin: 10px 0 8px;
+        font-size: 22px;
+      }
       .preview-body > :first-child { margin-top: 0; }
       .preview-body > :last-child { margin-bottom: 0; }
-      .preview-body ul, .preview-body ol { margin: 10px 0; padding-left: 22px; }
-      .preview-body li + li { margin-top: 6px; }
-      .preview-body code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 0.95em; background: #eef3ea; border-radius: 6px; padding: 0.12em 0.4em; }
-      .preview-body a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 2px; font-weight: 600; }
-      .preview-actions { margin-top: 14px; }
-      .button-preview { display: inline-flex; align-items: center; justify-content: center; padding: 12px 22px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 600; }
+      .preview-body ul,
+      .preview-body ol {
+        margin: 10px 0;
+        padding-left: 22px;
+      }
+      .preview-body li + li {
+        margin-top: 6px;
+      }
+      .preview-body code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.95em;
+        background: #eef3ea;
+        border-radius: 6px;
+        padding: 0.12em 0.4em;
+      }
+      .preview-body a {
+        color: var(--accent);
+        text-decoration: underline;
+        text-decoration-thickness: 1.5px;
+        text-underline-offset: 2px;
+        font-weight: 600;
+      }
+      .preview-actions {
+        margin-top: 14px;
+      }
+      .button-preview {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 18px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+      }
+      .empty-editor {
+        padding: 36px 20px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .empty-editor p {
+        margin: 0;
+      }
+      @media (max-width: 960px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+        .editor-shell {
+          min-height: 0;
+        }
+      }
       @media (max-width: 720px) {
-        .row { grid-template-columns: 1fr; }
-        header { flex-direction: column; align-items: flex-start; }
+        body.nav-open {
+          overflow: hidden;
+        }
+        .container {
+          width: min(100vw - 20px, 100%);
+          margin: 10px auto 24px;
+        }
+        .topbar-main {
+          width: 100%;
+          justify-content: space-between;
+        }
+        .mobile-nav-toggle,
+        .nav-close {
+          display: inline-flex;
+        }
+        .topbar,
+        .editor-head,
+        .item-header,
+        .row {
+          grid-template-columns: 1fr;
+          display: grid;
+        }
+        .topbar {
+          gap: 12px;
+        }
+        .controls {
+          width: 100%;
+          justify-content: stretch;
+        }
+        .controls {
+          padding-top: 0;
+        }
+        .controls button {
+          flex: 1 1 calc(50% - 8px);
+        }
+        .sidebar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          z-index: 30;
+          width: min(88vw, 360px);
+          border-radius: 0 8px 8px 0;
+          transform: translateX(calc(-100% - 12px));
+          transition: transform 160ms ease;
+          overflow: auto;
+        }
+        body.nav-open .sidebar {
+          transform: translateX(0);
+        }
+        .nav-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 20;
+          background: rgba(17, 24, 39, 0.36);
+        }
+        body.nav-open .nav-backdrop {
+          display: block;
+        }
+        .sidebar-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          position: sticky;
+          top: 0;
+          background: var(--surface);
+          z-index: 1;
+        }
+        .sidebar-body {
+          padding-bottom: 20px;
+        }
+        .row {
+          gap: 8px;
+        }
+        label {
+          padding-top: 0;
+        }
+        .item-actions {
+          justify-content: stretch;
+        }
+        .item-actions button {
+          flex: 1 1 calc(50% - 6px);
+        }
+        .preview-card {
+          padding: 16px;
+        }
+        .preview-meta-row {
+          align-items: flex-start;
+          flex-direction: column;
+        }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <header>
-        <div>
-          <h1>News Admin</h1>
-          <p class="muted">Bearbeite Einträge in news.json und Vorlagen in news_templates.json</p>
+      <div class="topbar">
+        <div class="topbar-main">
+          <div>
+            <h1>News Admin</h1>
+            <p class="intro muted">Navigation links, Bearbeitung rechts. Auf dem Handy steckt die Eintragsliste im Menü.</p>
+          </div>
+          <button id="nav-toggle" class="mobile-nav-toggle" type="button" aria-label="Eintragsmenü öffnen" aria-expanded="false" aria-controls="sidebar">
+            <span class="mobile-nav-toggle-bars" aria-hidden="true"><span></span><span></span><span></span></span>
+          </button>
         </div>
         <div class="controls">
           <button id="add-news-btn">News neu</button>
@@ -81,29 +519,57 @@ HTML_PAGE = r"""<!doctype html>
           <button id="git-btn">Git Commit & Push</button>
           <button id="deploy-btn">Deploy news.json</button>
         </div>
-      </header>
+      </div>
       <div id="status" class="status muted"></div>
-      <section>
-        <div class="section-header">
-          <div>
-            <h2>News</h2>
-            <p class="muted">Diese Einträge erscheinen auf der öffentlichen News-Seite.</p>
-          </div>
-        </div>
-        <div id="news-list" class="list"></div>
-      </section>
-      <section>
-        <div class="section-header">
-          <div>
-            <h2>Vorlagen</h2>
-            <p class="muted">Vorlagen werden separat gespeichert und können in die News kopiert werden.</p>
-          </div>
-        </div>
-        <div id="template-list" class="list"></div>
-      </section>
-    </div>
 
-    <template id="item-template">
+      <div class="workspace">
+        <aside id="sidebar" class="sidebar">
+          <div class="sidebar-head">
+            <div>
+              <h2>Einträge</h2>
+              <p class="sidebar-note muted">Wähle einen Eintrag aus. Angezeigt werden News und Vorlagen mit ihrem Titel.</p>
+            </div>
+            <button id="nav-close" class="nav-close" type="button" aria-label="Eintragsmenü schließen">
+              <span class="nav-close-bars" aria-hidden="true"><span></span><span></span></span>
+            </button>
+          </div>
+          <div class="sidebar-body">
+            <section class="nav-section">
+              <div class="nav-section-head">
+                <h3>News</h3>
+                <span id="news-count" class="nav-count"></span>
+              </div>
+              <div id="news-nav" class="nav-list"></div>
+            </section>
+            <section class="nav-section">
+              <div class="nav-section-head">
+                <h3>Vorlagen</h3>
+                <span id="templates-count" class="nav-count"></span>
+              </div>
+              <div id="template-nav" class="nav-list"></div>
+            </section>
+          </div>
+        </aside>
+
+        <main class="editor-shell">
+          <div class="editor-head">
+            <div>
+              <h2 id="editor-title">Eintrag bearbeiten</h2>
+              <p id="editor-note" class="editor-note muted">Wähle einen Eintrag in der Navigation aus.</p>
+            </div>
+            <div id="editor-kind" class="editor-tag">Keine Auswahl</div>
+          </div>
+          <div id="editor" class="editor-body">
+            <div class="empty-editor">
+              <p>Es ist noch kein Eintrag ausgewählt.</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <div id="nav-backdrop" class="nav-backdrop" hidden></div>
+
+    <template id="editor-template">
       <div class="card">
         <div class="item-header">
           <strong data-role="kind-label">News</strong>
@@ -116,45 +582,45 @@ HTML_PAGE = r"""<!doctype html>
           </div>
         </div>
         <div class="row">
-          <label>Datum</label>
-          <input name="date" placeholder="z.B. 16. Feb. 2026" />
+          <label for="editor-date">Datum</label>
+          <input id="editor-date" name="date" placeholder="z.B. 16. Feb. 2026" />
         </div>
         <div class="row">
-          <label>Titel</label>
-          <input name="title" placeholder="Titel" />
+          <label for="editor-title-input">Titel</label>
+          <input id="editor-title-input" name="title" placeholder="Titel" />
         </div>
         <div class="row">
-          <label>Text</label>
+          <label for="editor-text">Text</label>
           <div>
-            <textarea name="text" placeholder="Kurztext in Markdown"></textarea>
+            <textarea id="editor-text" name="text" placeholder="Kurztext in Markdown"></textarea>
             <div class="field-note">Markdown: Absätze, Listen, Links, <code>**fett**</code>, <code>*kursiv*</code>, <code>`code`</code></div>
           </div>
         </div>
         <div class="row">
-          <label>Veröffentlicht ab</label>
+          <label for="editor-published-from">Veröffentlicht ab</label>
           <div>
-            <input name="published_from" type="date" />
+            <input id="editor-published-from" name="published_from" type="date" />
             <div class="field-note">Leer = sofort sichtbar. Die Auswahl nutzt den Kalender des Browsers und wird als Datum gespeichert.</div>
           </div>
         </div>
         <div class="row">
-          <label>Veröffentlicht bis</label>
+          <label for="editor-published-until">Veröffentlicht bis</label>
           <div>
-            <input name="published_until" type="date" />
+            <input id="editor-published-until" name="published_until" type="date" />
             <div class="field-note">Leer = unbegrenzt sichtbar. Mit beiden Feldern entsteht ein Veröffentlichungszeitraum.</div>
           </div>
         </div>
         <div class="row">
-          <label>Flyer URL</label>
-          <input name="flyer_url" placeholder="2026-Rosenmontag.pdf" />
+          <label for="editor-flyer-url">Flyer URL</label>
+          <input id="editor-flyer-url" name="flyer_url" placeholder="2026-Rosenmontag.pdf" />
         </div>
         <div class="row">
-          <label>Flyer Label</label>
-          <input name="flyer_label" placeholder="Flyer (PDF)" />
+          <label for="editor-flyer-label">Flyer Label</label>
+          <input id="editor-flyer-label" name="flyer_label" placeholder="Flyer (PDF)" />
         </div>
         <div class="row">
-          <label>Flyer Text (ohne URL)</label>
-          <input name="flyer_text" placeholder="Flyer folgt" />
+          <label for="editor-flyer-text">Flyer Text (ohne URL)</label>
+          <input id="editor-flyer-text" name="flyer_text" placeholder="Flyer folgt" />
         </div>
         <div class="preview-block">
           <p class="preview-label">Vorschau</p>
@@ -173,15 +639,30 @@ HTML_PAGE = r"""<!doctype html>
 
     <script>
       (function () {
-        var newsListEl = document.getElementById("news-list");
-        var templateListEl = document.getElementById("template-list");
+        var newsNavEl = document.getElementById("news-nav");
+        var templateNavEl = document.getElementById("template-nav");
+        var newsCountEl = document.getElementById("news-count");
+        var templatesCountEl = document.getElementById("templates-count");
+        var editorEl = document.getElementById("editor");
+        var editorTitleEl = document.getElementById("editor-title");
+        var editorNoteEl = document.getElementById("editor-note");
+        var editorKindEl = document.getElementById("editor-kind");
         var statusEl = document.getElementById("status");
+        var navToggleBtn = document.getElementById("nav-toggle");
+        var navCloseBtn = document.getElementById("nav-close");
+        var navBackdropEl = document.getElementById("nav-backdrop");
         var addNewsBtn = document.getElementById("add-news-btn");
         var addTemplateBtn = document.getElementById("add-template-btn");
         var saveBtn = document.getElementById("save-btn");
         var gitBtn = document.getElementById("git-btn");
         var deployBtn = document.getElementById("deploy-btn");
-        var template = document.getElementById("item-template");
+        var editorTemplate = document.getElementById("editor-template");
+        var state = {
+          news: [],
+          templates: [],
+          selectedKind: "",
+          selectedIndex: -1,
+        };
 
         function parseJsonResponse(res) {
           return res.text().then(function (text) {
@@ -442,24 +923,190 @@ HTML_PAGE = r"""<!doctype html>
           return html.join("") || "<p class='muted'>Keine Vorschau vorhanden.</p>";
         }
 
-        function updatePreview(node) {
-          function v(name) {
-            return node.querySelector("[name='" + name + "']").value.trim();
+        function cloneItem(item) {
+          return {
+            date: item.date || "",
+            title: item.title || "",
+            text: item.text || "",
+            flyer_url: item.flyer_url || "",
+            flyer_label: item.flyer_label || "",
+            flyer_text: item.flyer_text || "",
+            published_from: item.published_from || "",
+            published_until: item.published_until || "",
+            __legacyDraft: Boolean(item.__legacyDraft),
+          };
+        }
+
+        function toEditableItem(item) {
+          var copy = cloneItem(item || {});
+          var hasWindow = String(copy.published_from || "").trim() || String(copy.published_until || "").trim();
+          copy.__legacyDraft = !hasWindow && isLegacyDraftValue(item && item.published);
+          return copy;
+        }
+
+        function toPersistedItem(item) {
+          var clean = {};
+          var fields = [
+            "date",
+            "title",
+            "text",
+            "flyer_url",
+            "flyer_label",
+            "flyer_text",
+            "published_from",
+            "published_until",
+          ];
+
+          fields.forEach(function (key) {
+            var value = String(item[key] || "").trim();
+            if (value) {
+              clean[key] = value;
+            }
+          });
+
+          if (
+            !clean.published_from &&
+            !clean.published_until &&
+            item.__legacyDraft
+          ) {
+            clean.published = false;
           }
 
-          var date = v("date");
-          var title = v("title");
-          var text = v("text");
-          var publishedFrom = v("published_from");
-          var publishedUntil = v("published_until");
-          var flyerUrl = sanitizeUrl(v("flyer_url"));
-          var flyerLabel = v("flyer_label") || "Flyer (PDF)";
-          var flyerText = v("flyer_text");
+          return clean;
+        }
+
+        function getItems(kind) {
+          return kind === "template" ? state.templates : state.news;
+        }
+
+        function isMobileLayout() {
+          return window.innerWidth <= 720;
+        }
+
+        function setNavOpen(isOpen) {
+          if (isMobileLayout() && isOpen) {
+            document.body.classList.add("nav-open");
+            navBackdropEl.hidden = false;
+            navToggleBtn.setAttribute("aria-expanded", "true");
+            return;
+          }
+
+          document.body.classList.remove("nav-open");
+          navBackdropEl.hidden = true;
+          navToggleBtn.setAttribute("aria-expanded", "false");
+        }
+
+        function closeNavIfMobile() {
+          if (isMobileLayout()) {
+            setNavOpen(false);
+          }
+        }
+
+        function hasAnyItems() {
+          return state.news.length || state.templates.length;
+        }
+
+        function getSelectedItem() {
+          if (!state.selectedKind || state.selectedIndex < 0) {
+            return null;
+          }
+
+          return getItems(state.selectedKind)[state.selectedIndex] || null;
+        }
+
+        function ensureSelection() {
+          var selectedItems;
+
+          if (state.selectedKind) {
+            selectedItems = getItems(state.selectedKind);
+            if (state.selectedIndex >= 0 && state.selectedIndex < selectedItems.length) {
+              return;
+            }
+          }
+
+          if (state.news.length) {
+            state.selectedKind = "news";
+            state.selectedIndex = 0;
+            return;
+          }
+
+          if (state.templates.length) {
+            state.selectedKind = "template";
+            state.selectedIndex = 0;
+            return;
+          }
+
+          state.selectedKind = "";
+          state.selectedIndex = -1;
+        }
+
+        function navTitle(item, kind, index) {
+          var title = String(item.title || "").trim();
+          if (title) {
+            return title;
+          }
+          return (kind === "template" ? "Vorlage" : "News") + " " + (index + 1);
+        }
+
+        function navMeta(item) {
+          var parts = [];
+          var date = String(item.date || "").trim();
+          var from = String(item.published_from || "").trim();
+          var until = String(item.published_until || "").trim();
+
+          if (date) {
+            parts.push(date);
+          }
+          if (from || until) {
+            parts.push((from || "sofort") + " bis " + (until || "offen"));
+          }
+          return parts.join(" | ");
+        }
+
+        function renderNavList(container, items, kind) {
+          container.innerHTML = "";
+
+          if (!items.length) {
+            container.innerHTML = "<p class='nav-empty'>Keine Einträge vorhanden.</p>";
+            return;
+          }
+
+          items.forEach(function (item, index) {
+            var button = document.createElement("button");
+            var meta = navMeta(item);
+            button.type = "button";
+            button.className = "nav-item";
+            if (state.selectedKind === kind && state.selectedIndex === index) {
+              button.className += " active";
+            }
+            button.innerHTML =
+              '<span class="nav-title">' + escapeHtml(navTitle(item, kind, index)) + "</span>" +
+              '<span class="nav-meta">' + escapeHtml(meta || (kind === "template" ? "Vorlage" : "News")) + "</span>";
+            button.addEventListener("click", function () {
+              state.selectedKind = kind;
+              state.selectedIndex = index;
+              renderAll();
+              closeNavIfMobile();
+            });
+            container.appendChild(button);
+          });
+        }
+
+        function renderCounts() {
+          newsCountEl.textContent = state.news.length + (state.news.length === 1 ? " Eintrag" : " Einträge");
+          templatesCountEl.textContent =
+            state.templates.length + (state.templates.length === 1 ? " Eintrag" : " Einträge");
+        }
+
+        function updatePreview(node, item) {
+          var flyerUrl = sanitizeUrl(item.flyer_url || "");
+          var flyerLabel = String(item.flyer_label || "").trim() || "Flyer (PDF)";
+          var flyerText = String(item.flyer_text || "").trim();
           var stateEl = node.querySelector("[data-preview='state']");
           var publicationState = getPublicationState(
-            publishedFrom,
-            publishedUntil,
-            node.dataset.legacyDraft === "true"
+            item.published_from,
+            item.published_until,
+            item.__legacyDraft
           );
           var stateLabels = {
             draft: "Entwurf",
@@ -468,9 +1115,9 @@ HTML_PAGE = r"""<!doctype html>
             invalid: "Datum prüfen",
           };
 
-          node.querySelector("[data-preview='date']").textContent = date || "Datum";
-          node.querySelector("[data-preview='title']").textContent = title || "Titel";
-          node.querySelector("[data-preview='text']").innerHTML = renderMarkdown(text);
+          node.querySelector("[data-preview='date']").textContent = String(item.date || "").trim() || "Datum";
+          node.querySelector("[data-preview='title']").textContent = String(item.title || "").trim() || "Titel";
+          node.querySelector("[data-preview='text']").innerHTML = renderMarkdown(item.text || "");
           stateEl.hidden = publicationState === "live";
           stateEl.textContent = stateLabels[publicationState] || "Entwurf";
           node.querySelector("[data-preview='actions']").innerHTML = flyerUrl
@@ -478,40 +1125,100 @@ HTML_PAGE = r"""<!doctype html>
             : '<span class="muted">' + escapeHtml(flyerText || "Kein Flyer verlinkt") + "</span>";
         }
 
-        function readItem(card) {
-          function v(name) {
-            return card.querySelector("[name='" + name + "']").value.trim();
-          }
-
-          var item = {
-            date: v("date"),
-            title: v("title"),
-            text: v("text"),
-          };
-          var publishedFrom = v("published_from");
-          var publishedUntil = v("published_until");
-          var flyerUrl = v("flyer_url");
-          var flyerLabel = v("flyer_label");
-          var flyerText = v("flyer_text");
-
-          if (publishedFrom) item.published_from = publishedFrom;
-          if (publishedUntil) item.published_until = publishedUntil;
-          if (!publishedFrom && !publishedUntil && card.dataset.legacyDraft === "true") {
-            item.published = false;
-          }
-          if (flyerUrl) item.flyer_url = flyerUrl;
-          if (flyerLabel) item.flyer_label = flyerLabel;
-          if (flyerText) item.flyer_text = flyerText;
-
-          return item;
+        function bindEditorInputs(node, item) {
+          Array.prototype.forEach.call(node.querySelectorAll("input, textarea"), function (field) {
+            field.addEventListener("input", function () {
+              item[field.name] = field.value;
+              if (field.name === "published_from" || field.name === "published_until") {
+                item.__legacyDraft = false;
+              }
+              updatePreview(node, item);
+              renderSidebar();
+            });
+          });
         }
 
-        function createItem(item, kind) {
-          kind = kind || "news";
-          var node = template.content.firstElementChild.cloneNode(true);
-          var hasWindow = String(item.published_from || "").trim() || String(item.published_until || "").trim();
-          node.dataset.kind = kind;
-          node.querySelector("[data-role='kind-label']").textContent = kind === "template" ? "Vorlage" : "News";
+        function deleteSelected() {
+          var items = getItems(state.selectedKind);
+
+          if (!items.length || state.selectedIndex < 0) {
+            return;
+          }
+
+          items.splice(state.selectedIndex, 1);
+          if (state.selectedIndex >= items.length) {
+            state.selectedIndex = items.length - 1;
+          }
+          ensureSelection();
+          renderAll();
+        }
+
+        function moveSelected(delta) {
+          var items = getItems(state.selectedKind);
+          var index = state.selectedIndex;
+          var nextIndex = index + delta;
+          var item;
+
+          if (index < 0 || nextIndex < 0 || nextIndex >= items.length) {
+            return;
+          }
+
+          item = items[index];
+          items.splice(index, 1);
+          items.splice(nextIndex, 0, item);
+          state.selectedIndex = nextIndex;
+          renderAll();
+        }
+
+        function copySelectedTo(targetKind) {
+          var item = getSelectedItem();
+          var targetItems;
+
+          if (!item) {
+            return;
+          }
+
+          targetItems = getItems(targetKind);
+          targetItems.push(cloneItem(item));
+          state.selectedKind = targetKind;
+          state.selectedIndex = targetItems.length - 1;
+          renderAll();
+          setStatus(
+            (targetKind === "news" ? "Vorlage in News kopiert." : "News als Vorlage kopiert.") +
+              " Speichern nicht vergessen."
+          );
+        }
+
+        function renderEditor() {
+          var item = getSelectedItem();
+          var kind = state.selectedKind;
+          var node;
+          var label;
+
+          editorEl.innerHTML = "";
+
+          if (!item) {
+            editorTitleEl.textContent = "Eintrag bearbeiten";
+            editorNoteEl.textContent = hasAnyItems()
+              ? "Wähle einen Eintrag in der Navigation aus."
+              : "Lege zuerst News oder Vorlagen an.";
+            editorKindEl.textContent = "Keine Auswahl";
+            editorEl.innerHTML =
+              '<div class="empty-editor"><p>' +
+              escapeHtml(hasAnyItems() ? "Es ist noch kein Eintrag ausgewählt." : "Noch keine Einträge vorhanden.") +
+              "</p></div>";
+            return;
+          }
+
+          label = kind === "template" ? "Vorlage" : "News";
+          editorTitleEl.textContent = navTitle(item, kind, state.selectedIndex);
+          editorNoteEl.textContent = kind === "template"
+            ? "Vorlagen werden in news_templates.json gespeichert und können direkt in die News kopiert werden."
+            : "News werden in news.json gespeichert und können von hier aus als Vorlage dupliziert werden.";
+          editorKindEl.textContent = label;
+
+          node = editorTemplate.content.firstElementChild.cloneNode(true);
+          node.querySelector("[data-role='kind-label']").textContent = label;
           node.querySelector("[data-role='template-action']").hidden = kind !== "template";
           node.querySelector("[data-role='news-action']").hidden = kind !== "news";
           node.querySelector("[name='date']").value = item.date || "";
@@ -522,57 +1229,48 @@ HTML_PAGE = r"""<!doctype html>
           node.querySelector("[name='flyer_url']").value = item.flyer_url || "";
           node.querySelector("[name='flyer_label']").value = item.flyer_label || "";
           node.querySelector("[name='flyer_text']").value = item.flyer_text || "";
-          node.dataset.legacyDraft = !hasWindow && isLegacyDraftValue(item.published) ? "true" : "false";
-
-          Array.prototype.forEach.call(
-            node.querySelectorAll("input, textarea"),
-            function (field) {
-              field.addEventListener("input", function () {
-                if (field.name === "published_from" || field.name === "published_until") {
-                  node.dataset.legacyDraft = "false";
-                }
-                updatePreview(node);
-              });
-            }
-          );
 
           node.addEventListener("click", function (e) {
             var action = e.target && e.target.getAttribute("data-action");
             if (!action) return;
             e.preventDefault();
-            var card = node;
+
             if (action === "delete") {
-              card.remove();
+              deleteSelected();
             } else if (action === "copy-to-news") {
-              newsListEl.appendChild(createItem(readItem(card), "news"));
-              setStatus("Vorlage in News kopiert. Speichern nicht vergessen.");
+              copySelectedTo("news");
             } else if (action === "copy-to-template") {
-              templateListEl.appendChild(createItem(readItem(card), "template"));
-              setStatus("News als Vorlage kopiert. Speichern nicht vergessen.");
+              copySelectedTo("template");
             } else if (action === "up") {
-              if (card.previousElementSibling) {
-                card.parentElement.insertBefore(card, card.previousElementSibling);
-              }
+              moveSelected(-1);
             } else if (action === "down") {
-              if (card.nextElementSibling) {
-                card.parentElement.insertBefore(card.nextElementSibling, card);
-              }
+              moveSelected(1);
             }
           });
 
-          updatePreview(node);
-          return node;
+          bindEditorInputs(node, item);
+          updatePreview(node, item);
+          editorEl.appendChild(node);
         }
 
-        function readItems(listEl) {
-          return Array.prototype.map.call(listEl.children, readItem);
+        function renderSidebar() {
+          renderCounts();
+          renderNavList(newsNavEl, state.news, "news");
+          renderNavList(templateNavEl, state.templates, "template");
         }
 
-        function renderList(listEl, items, kind) {
-          listEl.innerHTML = "";
-          items.forEach(function (item) {
-            listEl.appendChild(createItem(item, kind));
-          });
+        function renderAll() {
+          ensureSelection();
+          renderSidebar();
+          renderEditor();
+        }
+
+        function createNew(kind) {
+          var items = getItems(kind);
+          items.push(toEditableItem({}));
+          state.selectedKind = kind;
+          state.selectedIndex = items.length - 1;
+          renderAll();
         }
 
         function postJson(url, payload) {
@@ -581,6 +1279,20 @@ HTML_PAGE = r"""<!doctype html>
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload || {}),
           }).then(parseJsonResponse);
+        }
+
+        function saveNews() {
+          return postJson(
+            "api/news",
+            state.news.map(toPersistedItem)
+          );
+        }
+
+        function saveTemplates() {
+          return postJson(
+            "api/templates",
+            state.templates.map(toPersistedItem)
+          );
         }
 
         function load() {
@@ -594,21 +1306,15 @@ HTML_PAGE = r"""<!doctype html>
               var templates = results[1];
               if (!Array.isArray(news)) throw new Error("news.json hat kein Array-Format");
               if (!Array.isArray(templates)) throw new Error("news_templates.json hat kein Array-Format");
-              renderList(newsListEl, news, "news");
-              renderList(templateListEl, templates, "template");
+              state.news = news.map(toEditableItem);
+              state.templates = templates.map(toEditableItem);
+              ensureSelection();
+              renderAll();
               setStatus("");
             })
             .catch(function (err) {
               setStatus("Fehler beim Laden: " + err.message, true);
             });
-        }
-
-        function saveNews() {
-          return postJson("api/news", readItems(newsListEl));
-        }
-
-        function saveTemplates() {
-          return postJson("api/templates", readItems(templateListEl));
         }
 
         function save() {
@@ -673,15 +1379,32 @@ HTML_PAGE = r"""<!doctype html>
         }
 
         addNewsBtn.addEventListener("click", function () {
-          newsListEl.appendChild(createItem({}, "news"));
+          createNew("news");
+          closeNavIfMobile();
         });
         addTemplateBtn.addEventListener("click", function () {
-          templateListEl.appendChild(createItem({}, "template"));
+          createNew("template");
+          closeNavIfMobile();
+        });
+        navToggleBtn.addEventListener("click", function () {
+          setNavOpen(!document.body.classList.contains("nav-open"));
+        });
+        navCloseBtn.addEventListener("click", function () {
+          setNavOpen(false);
+        });
+        navBackdropEl.addEventListener("click", function () {
+          setNavOpen(false);
+        });
+        window.addEventListener("resize", function () {
+          if (!isMobileLayout()) {
+            setNavOpen(false);
+          }
         });
         saveBtn.addEventListener("click", save);
         gitBtn.addEventListener("click", commitAndPush);
         deployBtn.addEventListener("click", deployNews);
 
+        setNavOpen(false);
         load();
       })();
     </script>
