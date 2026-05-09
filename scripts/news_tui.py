@@ -16,6 +16,7 @@ FIELDS = [
     ("date", "Datum (z.B. 16. Feb. 2026)"),
     ("title", "Titel"),
     ("text", "Text"),
+    ("featured", "Featured auf Startseite (true/false, optional)"),
     ("published_from", "Veröffentlicht ab (YYYY-MM-DD, optional)"),
     ("published_until", "Veröffentlicht bis (YYYY-MM-DD, optional)"),
     ("flyer_url", "Flyer URL (optional)"),
@@ -85,6 +86,13 @@ def normalize_items(items):
             value = item.get(key, "")
             if value is None:
                 continue
+            if key == "featured":
+                if value is True or (
+                    isinstance(value, str)
+                    and value.strip().lower() in {"true", "1", "yes", "ja", "on"}
+                ):
+                    clean[key] = True
+                continue
             value = str(value).strip()
             if value:
                 clean[key] = value
@@ -139,6 +147,8 @@ def edit_item(stdscr, item):
     y = 3
     for key, label in FIELDS:
         current = item.get(key, "")
+        if key == "featured":
+            current = "true" if current is True else ""
         stdscr.addstr(y - 1, 2, "-" * 40)
         value = prompt_line(stdscr, y, f"{label}:", current)
         if value == "":
@@ -147,7 +157,11 @@ def edit_item(stdscr, item):
             if key in item:
                 del item[key]
         else:
-            item[key] = value
+            item[key] = (
+                value.strip().lower() in {"true", "1", "yes", "ja", "on"}
+                if key == "featured"
+                else value
+            )
         y += 3
     stdscr.addstr(y, 2, "Speichern mit Enter...")
     stdscr.getch()
@@ -165,6 +179,8 @@ def draw_list(stdscr, items, index, status):
     else:
         for i, item in enumerate(items):
             line = f"{i+1}. {item.get('date','')} | {item.get('title','')}"
+            if item.get("featured") is True:
+                line += " [Featured]"
             line += publication_state_label(item)
             if i == index:
                 stdscr.addstr(6 + i, 2, line[: w - 4], curses.A_REVERSE)

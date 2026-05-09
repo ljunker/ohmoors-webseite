@@ -304,6 +304,19 @@ HTML_PAGE = r"""<!doctype html>
         min-height: 200px;
         resize: vertical;
       }
+      .checkbox-field {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        font-weight: 600;
+      }
+      .checkbox-field input {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        accent-color: var(--accent);
+      }
       .field-note {
         margin-top: 6px;
         font-size: 13px;
@@ -609,6 +622,16 @@ HTML_PAGE = r"""<!doctype html>
           </div>
         </div>
         <div class="row">
+          <label for="editor-featured">Startseite</label>
+          <div>
+            <label class="checkbox-field" for="editor-featured">
+              <input id="editor-featured" name="featured" type="checkbox" />
+              Featured anzeigen
+            </label>
+            <div class="field-note">Featured News werden zusätzlich auf der Startseite angezeigt, solange sie veröffentlicht sind.</div>
+          </div>
+        </div>
+        <div class="row">
           <label for="editor-flyer-url">Flyer URL</label>
           <input id="editor-flyer-url" name="flyer_url" placeholder="2026-Rosenmontag.pdf" />
         </div>
@@ -693,6 +716,18 @@ HTML_PAGE = r"""<!doctype html>
 
           if (typeof value === "string") {
             return /^(false|0|no|nein|off)$/i.test(value.trim());
+          }
+
+          return false;
+        }
+
+        function isFeaturedValue(value) {
+          if (value === true) {
+            return true;
+          }
+
+          if (typeof value === "string") {
+            return /^(true|1|yes|ja|on)$/i.test(value.trim());
           }
 
           return false;
@@ -931,6 +966,7 @@ HTML_PAGE = r"""<!doctype html>
             flyer_text: item.flyer_text || "",
             published_from: item.published_from || "",
             published_until: item.published_until || "",
+            featured: isFeaturedValue(item.featured),
             __legacyDraft: Boolean(item.__legacyDraft),
           };
         }
@@ -961,6 +997,9 @@ HTML_PAGE = r"""<!doctype html>
               clean[key] = value;
             }
           });
+          if (isFeaturedValue(item.featured)) {
+            clean.featured = true;
+          }
 
           if (
             !clean.published_from &&
@@ -1055,6 +1094,9 @@ HTML_PAGE = r"""<!doctype html>
           if (date) {
             parts.push(date);
           }
+          if (isFeaturedValue(item.featured)) {
+            parts.push("Featured");
+          }
           if (from || until) {
             parts.push((from || "sofort") + " bis " + (until || "offen"));
           }
@@ -1125,8 +1167,8 @@ HTML_PAGE = r"""<!doctype html>
 
         function bindEditorInputs(node, item) {
           Array.prototype.forEach.call(node.querySelectorAll("input, textarea"), function (field) {
-            field.addEventListener("input", function () {
-              item[field.name] = field.value;
+            field.addEventListener(field.type === "checkbox" ? "change" : "input", function () {
+              item[field.name] = field.type === "checkbox" ? field.checked : field.value;
               if (field.name === "published_from" || field.name === "published_until") {
                 item.__legacyDraft = false;
               }
@@ -1224,6 +1266,7 @@ HTML_PAGE = r"""<!doctype html>
           node.querySelector("[name='text']").value = item.text || "";
           node.querySelector("[name='published_from']").value = toDateInputValue(item.published_from || "");
           node.querySelector("[name='published_until']").value = toDateInputValue(item.published_until || "");
+          node.querySelector("[name='featured']").checked = isFeaturedValue(item.featured);
           node.querySelector("[name='flyer_url']").value = item.flyer_url || "";
           node.querySelector("[name='flyer_label']").value = item.flyer_label || "";
           node.querySelector("[name='flyer_text']").value = item.flyer_text || "";
@@ -1437,6 +1480,14 @@ def is_published_value(value):
     return value is not False
 
 
+def is_featured_value(value):
+    if value is True:
+        return True
+    if isinstance(value, str):
+        return value.strip().lower() in {"true", "1", "yes", "ja", "on"}
+    return False
+
+
 def normalize_items(items):
     allowed = {
         "date",
@@ -1460,6 +1511,8 @@ def normalize_items(items):
             value = str(value).strip()
             if value:
                 clean[key] = value
+        if is_featured_value(item.get("featured")):
+            clean["featured"] = True
         if (
             "published_from" not in clean
             and "published_until" not in clean

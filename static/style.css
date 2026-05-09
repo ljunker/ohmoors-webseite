@@ -201,6 +201,10 @@ h1 {
   margin-top: 24px;
 }
 
+.home-featured {
+  max-width: 760px;
+}
+
 .button {
   display: inline-flex;
   align-items: center;
