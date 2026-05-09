@@ -237,7 +237,9 @@ h1 {
 }
 
 .page p a:not(.button),
-.page li a:not(.button) {
+.page li a:not(.button),
+.home-featured p a:not(.button),
+.home-featured li a:not(.button) {
   color: var(--accent-strong);
   text-decoration: underline;
   text-decoration-thickness: 1.5px;
@@ -246,12 +248,16 @@ h1 {
 }
 
 .page p a:not(.button):hover,
-.page li a:not(.button):hover {
+.page li a:not(.button):hover,
+.home-featured p a:not(.button):hover,
+.home-featured li a:not(.button):hover {
   text-decoration-thickness: 2px;
 }
 
 .page p a:not(.button):focus-visible,
-.page li a:not(.button):focus-visible {
+.page li a:not(.button):focus-visible,
+.home-featured p a:not(.button):focus-visible,
+.home-featured li a:not(.button):focus-visible {
   outline: 2px solid var(--accent-strong);
   outline-offset: 2px;
   border-radius: 2px;
