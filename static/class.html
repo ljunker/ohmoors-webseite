@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta
       name="description"
-      content="Aktueller Class-Fortschritt der Ohmoor Squeezers e.V. mit gelernten und wiederholten Mainstream-Figuren."
+      content="Aktueller Class-Fortschritt der Ohmoor Squeezers e.V. mit gelernten Mainstream-Figuren."
     />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="style.css" />
@@ -68,18 +68,10 @@
         }
 
         function isTaught(figure) {
-          return Boolean(figure.teached || figure.taught || figure.first_taught || figure.last_taught);
-        }
-
-        function isReviewed(figure) {
-          return Boolean(figure.reviewed || figure.last_reviewed);
+          return Boolean(figure.teached || figure.taught || figure.first_taught);
         }
 
         function statusLabel(figure) {
-          if (isReviewed(figure)) {
-            return '<span class="class-status-badge reviewed">Wiederholt</span>';
-          }
-
           if (isTaught(figure)) {
             return '<span class="class-status-badge taught">Gelernt</span>';
           }
@@ -122,14 +114,8 @@
                 '<td data-label="Status">' +
                 statusLabel(figure) +
                 "</td>" +
-                '<td data-label="Erstmals gelernt">' +
+                '<td data-label="Geteacht am">' +
                 escapeHtml(formatDate(figure.first_taught)) +
-                "</td>" +
-                '<td data-label="Zuletzt gelernt">' +
-                escapeHtml(formatDate(figure.last_taught)) +
-                "</td>" +
-                '<td data-label="Zuletzt wiederholt">' +
-                escapeHtml(formatDate(figure.last_reviewed)) +
                 "</td>" +
                 "</tr>"
               );
@@ -143,10 +129,8 @@
           var figures = Array.isArray(data.figures) ? data.figures : [];
           var total = figures.length;
           var taught = figures.filter(isTaught).length;
-          var reviewed = figures.filter(isReviewed).length;
           var open = Math.max(total - taught, 0);
           var taughtPercent = percentage(taught, total);
-          var reviewedPercent = percentage(reviewed, total);
           var activeLabel = classInfo.active ? "Aktiv" : "Nicht aktiv";
 
           contentEl.innerHTML =
@@ -187,7 +171,6 @@
             "</div>" +
             '<div class="class-metrics">' +
             renderMetric("Gelernt", taught + " / " + total, taughtPercent + "%") +
-            renderMetric("Wiederholt", reviewed + " / " + total, reviewedPercent + "%") +
             renderMetric("Offen", open + " / " + total, percentage(open, total) + "%") +
             renderMetric("Start", formatDate(classInfo.starts_on), classInfo.location || "") +
             "</div>" +
@@ -200,9 +183,7 @@
             "<th>Nr.</th>" +
             "<th>Call</th>" +
             "<th>Status</th>" +
-            "<th>Erstmals gelernt</th>" +
-            "<th>Zuletzt gelernt</th>" +
-            "<th>Zuletzt wiederholt</th>" +
+            "<th>Geteacht am</th>" +
             "</tr>" +
             "</thead>" +
             "<tbody>" +
