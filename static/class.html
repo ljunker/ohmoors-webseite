@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="description"
+      content="Aktueller Class-Fortschritt der Ohmoor Squeezers e.V. mit gelernten und wiederholten Mainstream-Figuren."
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <title>Ohmoor Squeezers e.V. - Class</title>
+  </head>
+  <body>
+    {{ include: nav.html }}
+    <main class="container page class-page">
+      <p class="eyebrow">Class</p>
+      <h1>Class-Fortschritt</h1>
+      <p id="class-status" class="muted">Class-Fortschritt wird geladen...</p>
+      <div id="class-content"></div>
+    </main>
+    <script>
+      (function () {
+        var STATUS_URL = "https://kryptikk.de/class/classes/1/status.json";
+        var statusEl = document.getElementById("class-status");
+        var contentEl = document.getElementById("class-content");
+        var dateFormatter = new Intl.DateTimeFormat("de-DE", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+
+        function escapeHtml(value) {
+          return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        }
+
+        function formatDate(value) {
+          var date;
+          var rawValue;
+
+          if (!value) {
+            return "-";
+          }
+
+          rawValue = String(value);
+          date = /^\d{4}-\d{2}-\d{2}$/.test(rawValue)
+            ? new Date(rawValue + "T00:00:00")
+            : new Date(rawValue);
+          if (Number.isNaN(date.getTime())) {
+            return "-";
+          }
+
+          return dateFormatter.format(date);
+        }
+
+        function percentage(count, total) {
+          if (!total) {
+            return 0;
+          }
+
+          return Math.round((count / total) * 100);
+        }
+
+        function isTaught(figure) {
+          return Boolean(figure.teached || figure.taught || figure.first_taught || figure.last_taught);
+        }
+
+        function isReviewed(figure) {
+          return Boolean(figure.reviewed || figure.last_reviewed);
+        }
+
+        function statusLabel(figure) {
+          if (isReviewed(figure)) {
+            return '<span class="class-status-badge reviewed">Wiederholt</span>';
+          }
+
+          if (isTaught(figure)) {
+            return '<span class="class-status-badge taught">Gelernt</span>';
+          }
+
+          return '<span class="class-status-badge open">Offen</span>';
+        }
+
+        function renderMetric(label, value, detail) {
+          return (
+            '<div class="class-metric">' +
+            '<span class="class-metric-label">' +
+            escapeHtml(label) +
+            "</span>" +
+            '<strong class="class-metric-value">' +
+            escapeHtml(value) +
+            "</strong>" +
+            '<span class="class-metric-detail">' +
+            escapeHtml(detail) +
+            "</span>" +
+            "</div>"
+          );
+        }
+
+        function renderFigures(figures) {
+          return figures
+            .map(function (figure) {
+              return (
+                "<tr>" +
+                '<td data-label="Nr.">' +
+                escapeHtml(figure.number || "") +
+                "</td>" +
+                '<td data-label="Call">' +
+                '<strong class="class-call-name">' +
+                escapeHtml(figure.call_name || "") +
+                "</strong>" +
+                '<span class="class-family">' +
+                escapeHtml(figure.family || "") +
+                "</span>" +
+                "</td>" +
+                '<td data-label="Status">' +
+                statusLabel(figure) +
+                "</td>" +
+                '<td data-label="Erstmals gelernt">' +
+                escapeHtml(formatDate(figure.first_taught)) +
+                "</td>" +
+                '<td data-label="Zuletzt gelernt">' +
+                escapeHtml(formatDate(figure.last_taught)) +
+                "</td>" +
+                '<td data-label="Zuletzt wiederholt">' +
+                escapeHtml(formatDate(figure.last_reviewed)) +
+                "</td>" +
+                "</tr>"
+              );
+            })
+            .join("");
+        }
+
+        function renderClass(data) {
+          var classInfo = data.class || {};
+          var program = data.program || {};
+          var figures = Array.isArray(data.figures) ? data.figures : [];
+          var total = figures.length;
+          var taught = figures.filter(isTaught).length;
+          var reviewed = figures.filter(isReviewed).length;
+          var open = Math.max(total - taught, 0);
+          var taughtPercent = percentage(taught, total);
+          var reviewedPercent = percentage(reviewed, total);
+          var activeLabel = classInfo.active ? "Aktiv" : "Nicht aktiv";
+
+          contentEl.innerHTML =
+            '<section class="class-overview" aria-label="Class-Übersicht">' +
+            '<div class="class-heading">' +
+            "<div>" +
+            '<h2 class="class-name">' +
+            escapeHtml(classInfo.name || "Class") +
+            "</h2>" +
+            '<p class="muted">' +
+            escapeHtml(program.name || "") +
+            (program.name && classInfo.location ? " | " : "") +
+            escapeHtml(classInfo.location || "") +
+            "</p>" +
+            "</div>" +
+            '<span class="class-active-badge">' +
+            escapeHtml(activeLabel) +
+            "</span>" +
+            "</div>" +
+            '<div class="class-progress-block">' +
+            '<div class="class-progress-meta">' +
+            "<strong>" +
+            taughtPercent +
+            "% gelernt</strong>" +
+            '<span class="muted">' +
+            taught +
+            " von " +
+            total +
+            " Figuren</span>" +
+            "</div>" +
+            '<div class="class-progress-track" aria-label="' +
+            taughtPercent +
+            '% gelernt">' +
+            '<span class="class-progress-fill" style="width: ' +
+            taughtPercent +
+            '%"></span>' +
+            "</div>" +
+            "</div>" +
+            '<div class="class-metrics">' +
+            renderMetric("Gelernt", taught + " / " + total, taughtPercent + "%") +
+            renderMetric("Wiederholt", reviewed + " / " + total, reviewedPercent + "%") +
+            renderMetric("Offen", open + " / " + total, percentage(open, total) + "%") +
+            renderMetric("Start", formatDate(classInfo.starts_on), classInfo.location || "") +
+            "</div>" +
+            "</section>" +
+            '<section class="class-figures" aria-label="Figurenliste">' +
+            "<h2>Figuren</h2>" +
+            '<table class="class-table">' +
+            "<thead>" +
+            "<tr>" +
+            "<th>Nr.</th>" +
+            "<th>Call</th>" +
+            "<th>Status</th>" +
+            "<th>Erstmals gelernt</th>" +
+            "<th>Zuletzt gelernt</th>" +
+            "<th>Zuletzt wiederholt</th>" +
+            "</tr>" +
+            "</thead>" +
+            "<tbody>" +
+            renderFigures(figures) +
+            "</tbody>" +
+            "</table>" +
+            "</section>";
+          statusEl.textContent = "";
+        }
+
+        fetch(STATUS_URL, { cache: "no-store" })
+          .then(function (response) {
+            if (!response.ok) {
+              throw new Error("HTTP " + response.status);
+            }
+            return response.json();
+          })
+          .then(function (data) {
+            renderClass(data || {});
+          })
+          .catch(function () {
+            statusEl.textContent = "Class-Fortschritt konnte nicht geladen werden.";
+            contentEl.innerHTML = "";
+          });
+      })();
+    </script>
+    {{ include: footer.html }}
+  </body>
+</html>

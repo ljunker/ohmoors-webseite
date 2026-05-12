@@ -562,6 +562,159 @@ tr.is-no-dance td {
   color: #1e40af;
 }
 
+.class-page .eyebrow {
+  margin-bottom: 10px;
+}
+
+.class-overview {
+  margin-top: 28px;
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.class-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.class-name {
+  margin: 0 0 6px;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.class-active-badge,
+.class-status-badge {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.class-active-badge {
+  padding: 7px 12px;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.class-progress-block {
+  margin-top: 22px;
+}
+
+.class-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.class-progress-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.class-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #419545, #2563eb);
+}
+
+.class-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.class-metric {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.class-metric-label,
+.class-metric-detail,
+.class-family {
+  display: block;
+  color: var(--muted);
+}
+
+.class-metric-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.class-metric-value {
+  display: block;
+  margin-top: 6px;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.class-metric-detail {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.class-figures {
+  margin-top: 34px;
+}
+
+.class-figures h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.class-table th:first-child,
+.class-table td:first-child {
+  width: 72px;
+}
+
+.class-call-name {
+  display: block;
+}
+
+.class-family {
+  margin-top: 3px;
+  font-size: 13px;
+}
+
+.class-status-badge {
+  padding: 5px 10px;
+}
+
+.class-status-badge.reviewed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.class-status-badge.taught {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.class-status-badge.open {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
 @media (max-width: 720px) {
   .nav-inner {
     flex-direction: column;
@@ -696,6 +849,31 @@ tr.is-no-dance td {
     align-items: center;
     justify-content: center;
     gap: 10px;
+  }
+
+  .class-overview {
+    padding: 18px;
+  }
+
+  .class-heading,
+  .class-progress-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .class-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .class-table th:first-child,
+  .class-table td:first-child {
+    width: auto;
+  }
+
+  .class-table td {
+    align-items: flex-start;
+    display: block;
   }
 
   .gallery-grid {
