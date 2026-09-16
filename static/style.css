@@ -589,22 +589,22 @@ tr.is-no-dance td {
 }
 
 .class-active-badge,
-.class-status-badge {
+.class-call-chip {
   display: inline-flex;
   align-items: center;
   width: max-content;
+}
+
+.class-active-badge {
+  padding: 7px 12px;
   border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
-}
-
-.class-active-badge {
-  padding: 7px 12px;
-  background: #dcfce7;
-  color: #166534;
 }
 
 .class-progress-block {
@@ -648,8 +648,7 @@ tr.is-no-dance td {
 }
 
 .class-metric-label,
-.class-metric-detail,
-.class-family {
+.class-metric-detail {
   display: block;
   color: var(--muted);
 }
@@ -673,6 +672,12 @@ tr.is-no-dance td {
   font-size: 13px;
 }
 
+.class-start {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .class-figures {
   margin-top: 34px;
 }
@@ -682,32 +687,82 @@ tr.is-no-dance td {
   font-size: 24px;
 }
 
-.class-table th:first-child,
-.class-table td:first-child {
-  width: 72px;
+.class-family-list {
+  display: grid;
+  gap: 0;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.class-call-name {
-  display: block;
+.class-family-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
 }
 
-.class-family {
-  margin-top: 3px;
+.class-family-row:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.class-family-number {
+  color: var(--muted);
   font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
-.class-status-badge {
-  padding: 5px 10px;
+.class-family-content {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
 }
 
-.class-status-badge.taught {
+.class-family-name {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.class-calls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.class-call-chip {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.class-call-chip.taught {
+  border-color: #86c98a;
   background: #dcfce7;
   color: #166534;
 }
 
-.class-status-badge.open {
-  background: #f3f4f6;
-  color: #4b5563;
+.class-call-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.class-call-date {
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
 }
 
 @media (max-width: 720px) {
@@ -859,16 +914,6 @@ tr.is-no-dance td {
 
   .class-metrics {
     grid-template-columns: 1fr;
-  }
-
-  .class-table th:first-child,
-  .class-table td:first-child {
-    width: auto;
-  }
-
-  .class-table td {
-    align-items: flex-start;
-    display: block;
   }
 
   .gallery-grid {
