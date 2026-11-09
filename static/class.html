@@ -40,23 +40,36 @@
             .replace(/'/g, "&#39;");
         }
 
-        function formatDate(value) {
-          var date;
-          var rawValue;
-
+        function parseDate(value) {
           if (!value) {
-            return "-";
+            return null;
           }
 
-          rawValue = String(value);
-          date = /^\d{4}-\d{2}-\d{2}$/.test(rawValue)
+          var rawValue = String(value);
+          var date = /^\d{4}-\d{2}-\d{2}$/.test(rawValue)
             ? new Date(rawValue + "T00:00:00")
             : new Date(rawValue);
-          if (Number.isNaN(date.getTime())) {
-            return "-";
-          }
+          return Number.isNaN(date.getTime()) ? null : date;
+        }
 
-          return dateFormatter.format(date);
+        function formatDate(value) {
+          var date = parseDate(value);
+          return date ? dateFormatter.format(date) : "-";
+        }
+
+        function latestClassDate(startsOn, figures) {
+          var latest = parseDate(startsOn);
+
+          figures.forEach(function (figure) {
+            [figure.first_taught, figure.last_taught, figure.last_reviewed].forEach(function (value) {
+              var date = parseDate(value);
+              if (date && (!latest || date > latest)) {
+                latest = date;
+              }
+            });
+          });
+
+          return latest ? dateFormatter.format(latest) : "-";
         }
 
         function percentage(count, total) {
@@ -222,6 +235,8 @@
             "</div>" +
             '<p class="class-start"><strong>Start:</strong> ' +
             escapeHtml(formatDate(classInfo.starts_on)) +
+            ' &middot; <strong>Stand:</strong> ' +
+            escapeHtml(latestClassDate(classInfo.starts_on, figures)) +
             "</p>" +
             "</section>" +
             '<section class="class-figures" aria-label="Figurenliste">' +
