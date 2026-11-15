@@ -51,8 +51,19 @@ build_pages: $(STATIC_DIR)/*.html $(STATIC_DIR)/nav.html build_pages.py
 	@mkdir -p $(SITE_DIR)
 	@$(PYTHON) build_pages.py $(STATIC_DIR) $(SITE_DIR)
 
+# events.json (+ Backup/Staging-Dateien) werden nur vom nightly-Job gepflegt und
+# dürfen vom Deploy weder überschrieben noch per --delete entfernt werden.
+# Nur beim Erst-Deploy (events.json fehlt im Webroot) wird sie initial kopiert.
 deploy: build
-	@sudo rsync -avh --delete $(SITE_DIR)/ $(DEPLOY_DIR)/
+	@sudo rsync -avh --delete \
+		--exclude /events.json \
+		--exclude /events.json.last-good \
+		--exclude '/.events.json.tmp.*' \
+		$(SITE_DIR)/ $(DEPLOY_DIR)/
+	@if ! sudo test -f $(DEPLOY_DIR)/$(EVENTS_JSON); then \
+		echo "Erst-Deploy: kopiere $(EVENTS_JSON) nach $(DEPLOY_DIR)"; \
+		sudo install -m 0644 $(SITE_DIR)/$(EVENTS_JSON) $(DEPLOY_DIR)/$(EVENTS_JSON); \
+	fi
 
 nightly:
 	@bash $(NIGHTLY_SCRIPT)
