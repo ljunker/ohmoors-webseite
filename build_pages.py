@@ -1,11 +1,15 @@
 import re
 import sys
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 
 INCLUDE_TOKEN = "{{ include: nav.html }}"
 FOOTER_TOKEN = "{{ include: footer.html }}"
 ACTIVE_CLASS = "active"
+SITE_URL = "https://ohmoor-squeezers.de/"
+# Keine eigenstaendigen Seiten bzw. nicht in der Sitemap (gallery ist im Menue deaktiviert).
+SITEMAP_EXCLUDE = {"nav.html", "footer.html", "gallery.html"}
 
 
 def mark_active(nav_html, page_name):
@@ -27,6 +31,21 @@ def mark_active(nav_html, page_name):
         return f"<a{attrs_before}href=\"{page_name}\" class=\"{ACTIVE_CLASS}\"{attrs_after}>"
 
     return pattern.sub(repl, nav_html)
+
+
+def write_sitemap(static_dir, site_dir):
+    names = [p.name for p in static_dir.glob("*.html") if p.name not in SITEMAP_EXCLUDE]
+    # index.html zuerst, dann alphabetisch
+    names.sort(key=lambda n: (n != "index.html", n))
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for name in names:
+        url = SITE_URL if name == "index.html" else f"{SITE_URL}{name}"
+        lines.append(f"  <url><loc>{escape(url)}</loc></url>")
+    lines.append("</urlset>")
+    (site_dir / "sitemap.xml").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main(argv):
@@ -52,6 +71,8 @@ def main(argv):
                 raise SystemExit("Missing static/footer.html")
             html = html.replace(FOOTER_TOKEN, footer_html)
         (site_dir / page.name).write_text(html, encoding="utf-8")
+
+    write_sitemap(static_dir, site_dir)
 
 
 if __name__ == "__main__":
