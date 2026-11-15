@@ -36,6 +36,7 @@ Hinweis: Der alte Freigabelink steht noch in der Git-History. Den Freigabelink i
 
 `schedule.html` liest Termine clientseitig aus `events.json` (im Site-Root).
 `news.html` liest News clientseitig aus `news.json` (im Site-Root).
+`make build` erzeugt außerdem `sitemap.xml` (alle Seiten außer `gallery.html`, siehe `SITEMAP_EXCLUDE` in `build_pages.py`).
 `gallery.html` liest Bilder clientseitig aus `gallery-pics/gallery.json` (wird beim Build automatisch aus `static/gallery-pics` erzeugt).
 
 ## News verwalten (CRUD)
