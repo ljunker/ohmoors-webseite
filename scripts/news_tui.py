@@ -26,6 +26,20 @@ FIELDS = [
     ("flyer_text", "Flyer Text (ohne URL)"),
 ]
 
+# Feste Schluesselreihenfolge fuer die Ausgabe (identisch zu news_admin.py).
+KEY_ORDER = (
+    "date",
+    "title",
+    "text",
+    "flyer_url",
+    "flyer_label",
+    "flyer_text",
+    "published_from",
+    "published_until",
+    "featured",
+)
+assert set(KEY_ORDER) == {k for k, _ in FIELDS}
+
 
 def load_news(path):
     if not os.path.exists(path):
@@ -78,13 +92,12 @@ def publication_state_label(item):
 
 
 def normalize_items(items):
-    allowed = {k for k, _ in FIELDS}
     normalized = []
     for item in items:
         if not isinstance(item, dict):
             continue
         clean = {}
-        for key in allowed:
+        for key in KEY_ORDER:
             value = item.get(key, "")
             if value is None:
                 continue

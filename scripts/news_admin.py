@@ -1294,7 +1294,7 @@ def is_featured_value(value):
 
 
 def normalize_items(items):
-    allowed = {
+    allowed = (
         "date",
         "title",
         "text",
@@ -1303,7 +1303,7 @@ def normalize_items(items):
         "flyer_text",
         "published_from",
         "published_until",
-    }
+    )
     normalized = []
     for item in items:
         if not isinstance(item, dict):
