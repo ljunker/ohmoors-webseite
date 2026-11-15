@@ -75,9 +75,9 @@
               (isTaught(figure) ? "taught" : "open") +
               '"><span class="num">' +
               (index === 0 ? escapeHtml(group.number) : "") +
-              "</span> " +
+              '</span><span class="name">' +
               escapeHtml(figure.call_name || "") +
-              "</li>"
+              "</span></li>"
             );
           })
           .join("");

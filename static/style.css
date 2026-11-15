@@ -963,17 +963,22 @@ tr.is-no-dance td {
 }
 
 .caller-fig {
+  display: flex;
+  gap: 0.3em;
   break-inside: avoid;
   padding: 2px 4px;
   border-left: 3px solid transparent;
 }
 
 .caller-fig .num {
-  display: inline-block;
-  width: 2.2em;
+  flex: 0 0 2.2em;
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
+}
+
+.caller-fig .name {
+  min-width: 0;
 }
 
 .caller-fig.taught {
