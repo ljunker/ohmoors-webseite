@@ -1,0 +1,234 @@
+(function () {
+  var escapeHtml = window.OhmoorsNews.escapeHtml;
+  var STATUS_URL = "https://class.kryptikk.de/classes/1/status.json";
+  var statusEl = document.getElementById("class-status");
+  var contentEl = document.getElementById("class-content");
+  var dateFormatter = new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  function parseDate(value) {
+    if (!value) {
+      return null;
+    }
+
+    var rawValue = String(value);
+    var date = /^\d{4}-\d{2}-\d{2}$/.test(rawValue)
+      ? new Date(rawValue + "T00:00:00")
+      : new Date(rawValue);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function formatDate(value) {
+    var date = parseDate(value);
+    return date ? dateFormatter.format(date) : "-";
+  }
+
+  function latestClassDate(startsOn, figures) {
+    var latest = parseDate(startsOn);
+
+    figures.forEach(function (figure) {
+      [figure.first_taught, figure.last_taught, figure.last_reviewed].forEach(function (value) {
+        var date = parseDate(value);
+        if (date && (!latest || date > latest)) {
+          latest = date;
+        }
+      });
+    });
+
+    return latest ? dateFormatter.format(latest) : "-";
+  }
+
+  function percentage(count, total) {
+    if (!total) {
+      return 0;
+    }
+
+    return Math.round((count / total) * 100);
+  }
+
+  function isTaught(figure) {
+    return Boolean(figure.teached || figure.taught || figure.first_taught);
+  }
+
+  function renderMetric(label, value, detail) {
+    return (
+      '<div class="class-metric">' +
+      '<span class="class-metric-label">' +
+      escapeHtml(label) +
+      "</span>" +
+      '<strong class="class-metric-value">' +
+      escapeHtml(value) +
+      "</strong>" +
+      '<span class="class-metric-detail">' +
+      escapeHtml(detail) +
+      "</span>" +
+      "</div>"
+    );
+  }
+
+  function groupFigures(figures) {
+    var groups = [];
+    var groupsByNumber = Object.create(null);
+
+    figures.forEach(function (figure) {
+      var number = String(figure.number || "");
+      var group = groupsByNumber[number];
+
+      if (!group) {
+        group = {
+          number: number,
+          family: figure.family || "",
+          figures: [],
+        };
+        groupsByNumber[number] = group;
+        groups.push(group);
+      }
+
+      group.figures.push(figure);
+    });
+
+    return groups;
+  }
+
+  function renderCall(figure) {
+    var taught = isTaught(figure);
+    var date = figure.first_taught ? formatDate(figure.first_taught) : "";
+    var accessibleLabel =
+      (figure.call_name || "") +
+      ", " +
+      (taught ? "gelernt" : "offen") +
+      (date ? ", geteacht am " + date : "");
+
+    return (
+      '<span class="class-call-chip ' +
+      (taught ? "taught" : "open") +
+      '" aria-label="' +
+      escapeHtml(accessibleLabel) +
+      '">' +
+      '<span class="class-call-name">' +
+      escapeHtml(figure.call_name || "") +
+      "</span>" +
+      (date
+        ? '<span class="class-call-date">Geteacht am ' + escapeHtml(date) + "</span>"
+        : "") +
+      "</span>"
+    );
+  }
+
+  function renderFamilies(groups) {
+    return groups
+      .map(function (group) {
+        return (
+          '<li class="class-family-row">' +
+          '<span class="class-family-number">' +
+          escapeHtml(group.number) +
+          "</span>" +
+          '<div class="class-family-content">' +
+          (group.figures.length > 1
+            ? '<strong class="class-family-name">' +
+              escapeHtml(group.family) +
+              "</strong>"
+            : "") +
+          '<div class="class-calls">' +
+          group.figures.map(renderCall).join("") +
+          "</div>" +
+          "</div>" +
+          "</li>"
+        );
+      })
+      .join("");
+  }
+
+  function renderClass(data) {
+    var classInfo = data.class || {};
+    var program = data.program || {};
+    var figures = Array.isArray(data.figures) ? data.figures : [];
+    var groups = groupFigures(figures);
+    var total = groups.length;
+    var complete = groups.filter(function (group) {
+      return group.figures.every(isTaught);
+    }).length;
+    var partial = groups.filter(function (group) {
+      var learned = group.figures.filter(isTaught).length;
+      return learned > 0 && learned < group.figures.length;
+    }).length;
+    var open = Math.max(total - complete - partial, 0);
+    var completePercent = percentage(complete, total);
+    var activeLabel = classInfo.active ? "Aktiv" : "Nicht aktiv";
+
+    contentEl.innerHTML =
+      '<section class="class-overview" aria-label="Class-Übersicht">' +
+      '<div class="class-heading">' +
+      "<div>" +
+      '<h2 class="class-name">' +
+      escapeHtml(classInfo.name || "Class") +
+      "</h2>" +
+      '<p class="muted">' +
+      escapeHtml(program.name || "") +
+      (program.name && classInfo.location ? " | " : "") +
+      escapeHtml(classInfo.location || "") +
+      "</p>" +
+      "</div>" +
+      '<span class="class-active-badge">' +
+      escapeHtml(activeLabel) +
+      "</span>" +
+      "</div>" +
+      '<div class="class-progress-block">' +
+      '<div class="class-progress-meta">' +
+      "<strong>" +
+      completePercent +
+      "% komplett</strong>" +
+      '<span class="muted">' +
+      complete +
+      " von " +
+      total +
+      " Figuren vollständig gelernt</span>" +
+      "</div>" +
+      '<div class="class-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' +
+      completePercent +
+      '" aria-label="' +
+      completePercent +
+      '% der Familien komplett">' +
+      '<span class="class-progress-fill" style="width: ' +
+      completePercent +
+      '%"></span>' +
+      "</div>" +
+      "</div>" +
+      '<div class="class-metrics">' +
+      renderMetric("Komplett", complete + " / " + total, percentage(complete, total) + "%") +
+      renderMetric("Teilweise", partial + " / " + total, percentage(partial, total) + "%") +
+      renderMetric("Offen", open + " / " + total, percentage(open, total) + "%") +
+      "</div>" +
+      '<p class="class-start"><strong>Start:</strong> ' +
+      escapeHtml(formatDate(classInfo.starts_on)) +
+      ' &middot; <strong>Stand:</strong> ' +
+      escapeHtml(latestClassDate(classInfo.starts_on, figures)) +
+      "</p>" +
+      "</section>" +
+      '<section class="class-figures" aria-label="Figurenliste">' +
+      "<h2>Figurenfamilien</h2>" +
+      '<ol class="class-family-list" role="list">' +
+      renderFamilies(groups) +
+      "</ol>" +
+      "</section>";
+    statusEl.textContent = "";
+  }
+
+  fetch(STATUS_URL, { cache: "no-store" })
+    .then(function (response) {
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+      }
+      return response.json();
+    })
+    .then(function (data) {
+      renderClass(data || {});
+    })
+    .catch(function () {
+      statusEl.textContent = "Class-Fortschritt konnte nicht geladen werden.";
+      contentEl.innerHTML = "";
+    });
+})();

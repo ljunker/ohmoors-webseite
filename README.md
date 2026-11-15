@@ -107,6 +107,7 @@ Beispiel-Installation auf dem Server:
 ```bash
 sudo install -m 0644 ops/nginx/ohmoors-news-admin-rate-limit.conf /etc/nginx/conf.d/ohmoors-news-admin-rate-limit.conf
 sudo install -m 0644 ops/systemd/ohmoors-news-admin.service /etc/systemd/system/ohmoors-news-admin.service
+sudo install -m 0644 ops/nginx/snippets/ohmoors-security-admin.conf /etc/nginx/snippets/ohmoors-security-admin.conf
 sudo install -m 0644 ops/nginx/snippets/ohmoors-news-admin.conf /etc/nginx/snippets/ohmoors-news-admin.conf
 sudo systemctl daemon-reload
 sudo systemctl enable --now ohmoors-news-admin.service
@@ -222,11 +223,13 @@ Die Repo-Datei `ohmoor-squeezers.de` nutzt:
 - `events.json` ohne Cache
 - Security-/Cache-/Deny-Regeln ueber Snippets in `ops/nginx/snippets/*.conf`
 - Hinweis: nginx vererbt `add_header` nur an Locations ohne eigenes `add_header`; Locations mit eigenem `add_header` (Asset-Cache, `events.json`) binden `ohmoors-security.conf` deshalb selbst ein. Das Deny-Snippet muss vor dem Cache-Snippet stehen (Regex-Locations: erster Treffer gewinnt).
+- Content-Security-Policy: `script-src 'self'` ohne `'unsafe-inline'`. Seiten-JS liegt unter `static/js/` (gemeinsamer News-Renderer in `static/js/news-render.js`); Inline-Scripts und `on*`-Attribute in `static/*.html` sind nicht mehr erlaubt. Die Admin-Location (`/admin/news/`) bindet stattdessen `ohmoors-security-admin.conf` ein, weil das Admin-UI noch ein Inline-Script nutzt; der Admin-Dienst liefert `/news-render.js` selbst aus dem Repo-Checkout (`static/js/news-render.js`) aus. Das Snippet `ohmoors-security-admin.conf` wird von `ohmoors-news-admin.conf` eingebunden und muss deshalb auch installiert sein.
 
 Beispiel-Deployment:
 
 ```bash
 sudo install -m 0644 ops/nginx/snippets/ohmoors-security.conf /etc/nginx/snippets/ohmoors-security.conf
+sudo install -m 0644 ops/nginx/snippets/ohmoors-security-admin.conf /etc/nginx/snippets/ohmoors-security-admin.conf
 sudo install -m 0644 ops/nginx/snippets/ohmoors-static-cache.conf /etc/nginx/snippets/ohmoors-static-cache.conf
 sudo install -m 0644 ops/nginx/snippets/ohmoors-deny.conf /etc/nginx/snippets/ohmoors-deny.conf
 sudo install -m 0644 ohmoor-squeezers.de /etc/nginx/sites-available/ohmoor-squeezers.de
