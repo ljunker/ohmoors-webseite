@@ -85,9 +85,52 @@
       .join("");
   }
 
+  var MIN_FONT_PX = 16;
+  var MAX_FONT_PX = 40;
+  var BOTTOM_MARGIN_PX = 8;
+
+  function fitsScreen() {
+    return listEl.getBoundingClientRect().bottom <= window.innerHeight - BOTTOM_MARGIN_PX;
+  }
+
+  // Größte Schrift suchen, bei der die ganze Liste auf den Bildschirm passt.
+  // Passt nicht einmal MIN_FONT_PX (z. B. am Handy), bleibt es dabei und die Seite scrollt.
+  function fitToScreen() {
+    if (!listEl.children.length) {
+      return;
+    }
+
+    var low = MIN_FONT_PX;
+    var high = MAX_FONT_PX;
+
+    listEl.style.fontSize = high + "px";
+    if (fitsScreen()) {
+      return;
+    }
+
+    while (high - low > 0.5) {
+      var mid = (low + high) / 2;
+      listEl.style.fontSize = mid + "px";
+      if (fitsScreen()) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+
+    listEl.style.fontSize = low + "px";
+  }
+
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(fitToScreen, 150);
+  });
+
   function applyOnlyTaught(on) {
     toggleEl.checked = on;
     listEl.classList.toggle("only-taught", on);
+    fitToScreen();
   }
 
   function restoreToggle() {
@@ -129,6 +172,7 @@
       standEl.textContent = "Stand: " + latestClassDate(classInfo.starts_on, figures);
       countEl.textContent = taught + " / " + figures.length + " gelernt";
       statusEl.textContent = "";
+      fitToScreen();
     })
     .catch(function () {
       statusEl.textContent = "Class-Fortschritt konnte nicht geladen werden.";

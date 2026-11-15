@@ -958,8 +958,9 @@ tr.is-no-dance td {
   list-style: none;
   margin: 0;
   padding: 0;
-  columns: 240px;
-  column-gap: 20px;
+  /* Spaltenbreite in em: skaliert mit der per JS angepassten Schriftgröße. */
+  columns: 15em;
+  column-gap: 1.25em;
 }
 
 .caller-fig {
