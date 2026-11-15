@@ -8,8 +8,8 @@ INCLUDE_TOKEN = "{{ include: nav.html }}"
 FOOTER_TOKEN = "{{ include: footer.html }}"
 ACTIVE_CLASS = "active"
 SITE_URL = "https://ohmoor-squeezers.de/"
-# Keine eigenstaendigen Seiten bzw. nicht in der Sitemap (gallery ist im Menue deaktiviert).
-SITEMAP_EXCLUDE = {"nav.html", "footer.html", "gallery.html"}
+# Keine eigenstaendigen Seiten bzw. nicht in der Sitemap (gallery ist im Menue deaktiviert, caller-class ist eine versteckte Caller-Ansicht).
+SITEMAP_EXCLUDE = {"nav.html", "footer.html", "gallery.html", "caller-class.html"}
 
 
 def mark_active(nav_html, page_name):
