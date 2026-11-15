@@ -14,6 +14,8 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_NEWS_FILE = os.path.join(BASE_DIR, "static", "news.json")
 DEFAULT_TEMPLATES_FILE = os.path.join(BASE_DIR, "static", "news_templates.json")
 DEFAULT_DEPLOY_DIR = "/var/www/ohmoors.de/html"
+DEFAULT_BACKUP_DIR = os.path.join(BASE_DIR, "backups")
+DEFAULT_BACKUP_KEEP = 20
 # Maximale Groesse eines POST-Bodys (Schutz gegen uebergrosse Requests).
 MAX_BODY_BYTES = 1_000_000
 
@@ -1535,12 +1537,33 @@ def normalize_items(items):
     return normalized
 
 
-def write_items(path, items):
+def backup_file(path, backup_dir, keep):
+    """Kopiert path nach backup_dir und behaelt nur die keep neuesten Backups."""
+    if not os.path.exists(path):
+        return
+    os.makedirs(backup_dir, exist_ok=True)
+    base = os.path.basename(path)
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    shutil.copy2(path, os.path.join(backup_dir, f"{base}.bak-{ts}"))
+    if keep <= 0:
+        return
+    prefix = f"{base}.bak-"
+    backups = sorted(
+        name
+        for name in os.listdir(backup_dir)
+        if name.startswith(prefix)
+        and os.path.isfile(os.path.join(backup_dir, name))
+    )
+    for name in backups[:-keep]:
+        try:
+            os.remove(os.path.join(backup_dir, name))
+        except OSError:
+            pass
+
+
+def write_items(path, items, backup_dir=DEFAULT_BACKUP_DIR, keep=DEFAULT_BACKUP_KEEP):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    if os.path.exists(path):
-        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-        backup = f"{path}.bak-{ts}"
-        shutil.copy2(path, backup)
+    backup_file(path, backup_dir, keep)
     tmp_path = f"{path}.tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(items, f, ensure_ascii=False, indent=2)
@@ -1548,12 +1571,14 @@ def write_items(path, items):
     os.replace(tmp_path, path)
 
 
-def write_news(path, items):
-    write_items(path, items)
+def write_news(path, items, backup_dir=DEFAULT_BACKUP_DIR, keep=DEFAULT_BACKUP_KEEP):
+    write_items(path, items, backup_dir, keep)
 
 
-def write_templates(path, items):
-    write_items(path, items)
+def write_templates(
+    path, items, backup_dir=DEFAULT_BACKUP_DIR, keep=DEFAULT_BACKUP_KEEP
+):
+    write_items(path, items, backup_dir, keep)
 
 
 def run_command(cmd, cwd):
@@ -1731,7 +1756,12 @@ class NewsHandler(BaseHTTPRequestHandler):
                 if not isinstance(data, list):
                     raise ValueError("news.json must be a list")
                 items = normalize_items(data)
-                write_news(self.server.news_file, items)
+                write_news(
+                    self.server.news_file,
+                    items,
+                    self.server.backup_dir,
+                    self.server.backup_keep,
+                )
             except Exception as exc:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -1752,7 +1782,12 @@ class NewsHandler(BaseHTTPRequestHandler):
                 if not isinstance(data, list):
                     raise ValueError("news_templates.json must be a list")
                 items = normalize_items(data)
-                write_templates(self.server.templates_file, items)
+                write_templates(
+                    self.server.templates_file,
+                    items,
+                    self.server.backup_dir,
+                    self.server.backup_keep,
+                )
             except Exception as exc:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -1834,16 +1869,30 @@ def main(argv):
         default=DEFAULT_DEPLOY_DIR,
         help="Deploy target for news.json",
     )
+    parser.add_argument(
+        "--backup-dir",
+        default=DEFAULT_BACKUP_DIR,
+        help="Directory for backups created on every save",
+    )
+    parser.add_argument(
+        "--backup-keep",
+        type=int,
+        default=DEFAULT_BACKUP_KEEP,
+        help="Number of backups to keep per file (<= 0: keep all)",
+    )
     args = parser.parse_args(argv)
 
     server = HTTPServer((args.host, args.port), NewsHandler)
     server.news_file = os.path.abspath(args.file)
     server.templates_file = os.path.abspath(args.templates_file)
     server.deploy_dir = os.path.abspath(args.deploy_dir)
+    server.backup_dir = os.path.abspath(args.backup_dir)
+    server.backup_keep = args.backup_keep
     print(f"News admin running on http://{args.host}:{args.port}")
     print(f"Editing: {server.news_file}")
     print(f"Templates: {server.templates_file}")
     print(f"Deploy dir: {server.deploy_dir}")
+    print(f"Backups: {server.backup_dir} (keep {server.backup_keep})")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

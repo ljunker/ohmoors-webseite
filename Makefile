@@ -23,7 +23,7 @@ it_so: clean_all build serve
 
 copy_static:
 	@mkdir -p $(SITE_DIR)
-	@cp -a $(STATIC_DIR)/. $(SITE_DIR)/
+	@rsync -a --exclude '*.bak*' --exclude '*.tmp' $(STATIC_DIR)/ $(SITE_DIR)/
 
 copy_events_json: $(EVENTS_JSON)
 	@mkdir -p $(SITE_DIR)

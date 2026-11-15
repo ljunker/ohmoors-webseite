@@ -42,6 +42,14 @@ python3 scripts/news_admin.py --deploy-dir /pfad/zum/webroot
 
 Standard-Deploy-Ziel: `/var/www/ohmoors.de/html`
 
+Bei jedem Speichern wird die bisherige Datei als `<name>.bak-<Zeitstempel>` nach `backups/` im Repo (nicht in `static/`) kopiert. Pro Datei werden die neuesten 20 Backups behalten, ältere werden gelöscht. Abweichend einstellbar:
+
+```bash
+python3 scripts/news_admin.py --backup-dir /pfad/zu/backups --backup-keep 50
+```
+
+`--backup-keep 0` (oder kleiner) deaktiviert das Aufräumen. `scripts/news_tui.py` kennt dieselben Optionen. `make build` kopiert `static/` per `rsync` ohne `*.bak*` und `*.tmp` nach `_site/`.
+
 TUI-Variante:
 
 ```bash
@@ -102,6 +110,8 @@ Wichtig:
 - Dieser Benutzer braucht Schreibrechte auf `/var/www/ohmoors.de/html`.
 - Für den aktuellen Server-Stand sind `User=lars`, `Group=lars` und `WorkingDirectory=/home/lars/ohmoors-webseite` vorgesehen.
 - Passe nur dann `User=`, `Group=`, `WorkingDirectory=`, `NEWS_FILE=`, `NEWS_TEMPLATES_FILE=` oder den Python-Pfad an, wenn dein Server davon abweicht.
+- Backups landen standardmäßig in `<repo>/backups`, der Dienstbenutzer braucht dort (im Checkout) Schreibrechte.
+- Einmalig aufräumen: alte Backups `static/*.bak-*` im Checkout löschen oder nach `backups/` verschieben. Der nächste `make deploy` entfernt sie per `--delete` aus dem Webroot.
 - Das Rate Limit ist aktuell auf `10` Requests pro Minute pro IP mit `burst=10` gesetzt und antwortet bei Überschreitung mit HTTP `418`. Das schützt gegen stumpfes Durchprobieren, ohne normale Admin-Nutzung unnötig zu stören.
 
 ## Server-Update nur fuer Events

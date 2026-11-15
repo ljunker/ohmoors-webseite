@@ -10,6 +10,8 @@ from datetime import datetime
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_NEWS_FILE = os.path.join(BASE_DIR, "static", "news.json")
+DEFAULT_BACKUP_DIR = os.path.join(BASE_DIR, "backups")
+DEFAULT_BACKUP_KEEP = 20
 
 
 FIELDS = [
@@ -106,12 +108,33 @@ def normalize_items(items):
     return normalized
 
 
-def write_news(path, items):
+def backup_file(path, backup_dir, keep):
+    """Kopiert path nach backup_dir und behaelt nur die keep neuesten Backups."""
+    if not os.path.exists(path):
+        return
+    os.makedirs(backup_dir, exist_ok=True)
+    base = os.path.basename(path)
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    shutil.copy2(path, os.path.join(backup_dir, f"{base}.bak-{ts}"))
+    if keep <= 0:
+        return
+    prefix = f"{base}.bak-"
+    backups = sorted(
+        name
+        for name in os.listdir(backup_dir)
+        if name.startswith(prefix)
+        and os.path.isfile(os.path.join(backup_dir, name))
+    )
+    for name in backups[:-keep]:
+        try:
+            os.remove(os.path.join(backup_dir, name))
+        except OSError:
+            pass
+
+
+def write_news(path, items, backup_dir=DEFAULT_BACKUP_DIR, keep=DEFAULT_BACKUP_KEEP):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    if os.path.exists(path):
-        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-        backup = f"{path}.bak-{ts}"
-        shutil.copy2(path, backup)
+    backup_file(path, backup_dir, keep)
     tmp_path = f"{path}.tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(items, f, ensure_ascii=False, indent=2)
@@ -193,7 +216,9 @@ def draw_list(stdscr, items, index, status):
     stdscr.refresh()
 
 
-def run_tui(stdscr, news_path):
+def run_tui(
+    stdscr, news_path, backup_dir=DEFAULT_BACKUP_DIR, backup_keep=DEFAULT_BACKUP_KEEP
+):
     curses.curs_set(0)
     items = normalize_items(load_news(news_path))
     index = 0
@@ -235,7 +260,7 @@ def run_tui(stdscr, news_path):
                 items[index + 1], items[index] = items[index], items[index + 1]
                 index += 1
         elif ch == ord("s"):
-            write_news(news_path, normalize_items(items))
+            write_news(news_path, normalize_items(items), backup_dir, backup_keep)
             status = f"Gespeichert: {news_path}"
         elif ch == ord("r"):
             items = normalize_items(load_news(news_path))
@@ -246,11 +271,23 @@ def run_tui(stdscr, news_path):
 def main(argv):
     parser = argparse.ArgumentParser(description="TUI CRUD for static/news.json")
     parser.add_argument("--file", default=DEFAULT_NEWS_FILE, help="Path to news.json")
+    parser.add_argument(
+        "--backup-dir",
+        default=DEFAULT_BACKUP_DIR,
+        help="Directory for backups created on every save",
+    )
+    parser.add_argument(
+        "--backup-keep",
+        type=int,
+        default=DEFAULT_BACKUP_KEEP,
+        help="Number of backups to keep (<= 0: keep all)",
+    )
     args = parser.parse_args(argv)
     news_path = os.path.abspath(args.file)
+    backup_dir = os.path.abspath(args.backup_dir)
 
     try:
-        curses.wrapper(run_tui, news_path)
+        curses.wrapper(run_tui, news_path, backup_dir, args.backup_keep)
     except KeyboardInterrupt:
         pass
 
