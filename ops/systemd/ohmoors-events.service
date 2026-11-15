@@ -5,14 +5,23 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+# Run as the deploy/admin user that owns the repo checkout and can write to
+# DEPLOY_DIR (same user as ohmoors-news-admin.service).
+User=lars
+Group=lars
 # Adjust these paths to your server checkout location.
-WorkingDirectory=/Users/lj/website
-Environment=PROJECT_ROOT=/Users/lj/website
+WorkingDirectory=/home/lars/ohmoors-webseite
+Environment=PROJECT_ROOT=/home/lars/ohmoors-webseite
 Environment=DEPLOY_DIR=/var/www/ohmoors.de/html
-Environment=LOCK_FILE=/tmp/ohmoors-events.lock
+# Lock file lives in a per-service runtime dir (/run/ohmoors-events, owned by
+# lars) instead of /tmp: a stale /tmp/ohmoors-events.lock created earlier by
+# root would not be writable for lars.
+RuntimeDirectory=ohmoors-events
+Environment=LOCK_FILE=/run/ohmoors-events/update.lock
 # Enthält OHMOORS_CALENDAR_URL=... (Kalender-Feed-URL mit Freigabe-Token).
-# Datei root-owned, Rechte 0600; nicht ins Repo einchecken.
+# Datei root-owned, Rechte 0600 ist ok (systemd liest sie als root vor dem
+# Wechsel auf User=lars); nicht ins Repo einchecken.
 EnvironmentFile=/etc/ohmoors/events.env
-ExecStart=/Users/lj/website/scripts/nightly_update.sh
+ExecStart=/home/lars/ohmoors-webseite/scripts/nightly_update.sh
 StandardOutput=journal
 StandardError=journal

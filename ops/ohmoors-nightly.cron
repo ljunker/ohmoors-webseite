@@ -1,7 +1,0 @@
-# Legacy fallback only.
-# Preferred scheduler is systemd timer (see ops/systemd/ohmoors-events.*).
-#
-# If you still use cron:
-#   sudo crontab -e
-# Then add:
-15 2 * * * DEPLOY_DIR=/var/www/ohmoors.de/html /Users/lj/website/scripts/nightly_update.sh >> /var/log/ohmoors-nightly.log 2>&1
