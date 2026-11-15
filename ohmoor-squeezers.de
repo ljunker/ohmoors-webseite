@@ -7,8 +7,9 @@ server {
     index index.html;
 
     include /etc/nginx/snippets/ohmoors-security.conf;
-    include /etc/nginx/snippets/ohmoors-static-cache.conf;
+    # Regex locations: first match wins, so deny rules must come before the static cache.
     include /etc/nginx/snippets/ohmoors-deny.conf;
+    include /etc/nginx/snippets/ohmoors-static-cache.conf;
     include /etc/nginx/snippets/ohmoors-news-admin.conf;
 
     location / {
@@ -17,6 +18,8 @@ server {
 
     # schedule.html loads events.json directly; keep it uncached for fresh updates.
     location = /events.json {
+        # add_header here disables inheritance from the server block, so repeat the security headers.
+        include /etc/nginx/snippets/ohmoors-security.conf;
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate" always;
         expires -1;
         try_files $uri =404;
