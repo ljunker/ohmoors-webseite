@@ -6,6 +6,12 @@ DEPLOY_DIR="${DEPLOY_DIR:-/var/www/ohmoors.de/html}"
 PROJECT_ROOT="${PROJECT_ROOT:-$ROOT_DIR}"
 LOCK_FILE="${LOCK_FILE:-/tmp/ohmoors-events.lock}"
 
+if [[ -z "${OHMOORS_CALENDAR_URL:-}" ]]; then
+  echo "ERROR: OHMOORS_CALENDAR_URL ist nicht gesetzt (Kalender-Feed-URL)."
+  echo "Setze sie in der Umgebung bzw. in /etc/ohmoors/events.env (siehe README)."
+  exit 1
+fi
+
 if [[ -x "$PROJECT_ROOT/.venv/bin/python" ]]; then
   PYTHON_BIN="$PROJECT_ROOT/.venv/bin/python"
 else

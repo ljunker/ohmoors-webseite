@@ -10,6 +10,30 @@ make build           # baut die Seite nach _site
 make serve           # startet lokalen Server auf _site
 ```
 
+### Kalender-Feed-URL
+
+Die URL des iCloud-Kalenders (enthält ein Freigabe-Token) steht nicht im Repo, sondern wird über die Umgebungsvariable `OHMOORS_CALENDAR_URL` übergeben. Ohne sie bricht `events.py` mit Exit-Code 1 ab; bei Abruffehlern mit Exit-Code 2 (ohne `events.json` zu überschreiben).
+
+Lokal:
+
+```bash
+OHMOORS_CALENDAR_URL='webcal://...' make update_events
+# oder dauerhaft in der Shell:
+export OHMOORS_CALENDAR_URL='webcal://...'
+```
+
+Server (systemd, `ops/systemd/ohmoors-events.service` liest `EnvironmentFile=/etc/ohmoors/events.env`):
+
+```bash
+sudo install -d -m 0755 /etc/ohmoors
+echo 'OHMOORS_CALENDAR_URL=webcal://...' | sudo tee /etc/ohmoors/events.env >/dev/null
+sudo chown root:root /etc/ohmoors/events.env
+sudo chmod 600 /etc/ohmoors/events.env
+sudo systemctl daemon-reload
+```
+
+Hinweis: Der alte Freigabelink steht noch in der Git-History. Den Freigabelink im iCloud-Kalender daher neu erzeugen (alten widerrufen) und nur die neue URL verwenden.
+
 `schedule.html` liest Termine clientseitig aus `events.json` (im Site-Root).
 `news.html` liest News clientseitig aus `news.json` (im Site-Root).
 `gallery.html` liest Bilder clientseitig aus `gallery-pics/gallery.json` (wird beim Build automatisch aus `static/gallery-pics` erzeugt).
