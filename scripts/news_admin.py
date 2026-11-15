@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+from urllib.parse import urlsplit
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -13,6 +14,8 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_NEWS_FILE = os.path.join(BASE_DIR, "static", "news.json")
 DEFAULT_TEMPLATES_FILE = os.path.join(BASE_DIR, "static", "news_templates.json")
 DEFAULT_DEPLOY_DIR = "/var/www/ohmoors.de/html"
+# Maximale Groesse eines POST-Bodys (Schutz gegen uebergrosse Requests).
+MAX_BODY_BYTES = 1_000_000
 
 
 HTML_PAGE = r"""<!doctype html>
@@ -1662,8 +1665,54 @@ class NewsHandler(BaseHTTPRequestHandler):
         self.send_response(404)
         self.end_headers()
 
+    def _send_json(self, status, payload):
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(json.dumps(payload).encode("utf-8"))
+
+    def _check_post_request(self):
+        """CSRF-Schutz: prueft Herkunft, Content-Type und Groesse vor dem Lesen des Bodys.
+
+        Sendet bei Verstoss eine Fehlerantwort und gibt None zurueck, sonst die Content-Length.
+        """
+        fetch_site = self.headers.get("Sec-Fetch-Site")
+        if fetch_site is not None and fetch_site.strip().lower() not in ("same-origin", "none"):
+            self._send_json(403, {"error": "Cross-Site-Anfrage abgelehnt"})
+            return None
+
+        origin = self.headers.get("Origin")
+        if origin is not None:
+            host = (self.headers.get("Host") or "").strip().lower()
+            try:
+                origin_host = urlsplit(origin.strip()).netloc.lower()
+            except ValueError:
+                origin_host = ""
+            if not origin_host or origin_host != host:
+                self._send_json(403, {"error": "Ungültige Herkunft (Origin)"})
+                return None
+
+        content_type = (self.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+        if content_type != "application/json":
+            self._send_json(415, {"error": "Content-Type muss application/json sein"})
+            return None
+
+        try:
+            content_length = int(self.headers.get("Content-Length", "0") or "0")
+        except ValueError:
+            content_length = -1
+        if content_length < 0:
+            self._send_json(400, {"error": "Ungültige Content-Length"})
+            return None
+        if content_length > MAX_BODY_BYTES:
+            self._send_json(413, {"error": "Anfrage zu groß"})
+            return None
+        return content_length
+
     def do_POST(self):
-        content_length = int(self.headers.get("Content-Length", "0") or "0")
+        content_length = self._check_post_request()
+        if content_length is None:
+            return
         body = self.rfile.read(content_length)
         raw_text = body.decode("utf-8") if body else ""
 
