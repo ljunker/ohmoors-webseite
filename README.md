@@ -140,6 +140,8 @@ Das Script:
 - deployed atomar per `mv`
 - schreibt bei vorhandenem Ziel eine Sicherung nach `events.json.last-good`
 
+Hinweis zu `make deploy`: Der Deploy fasst `events.json` und `events.json.last-good` im Webroot nicht an (rsync-Excludes, auch bei `--delete`). Nur beim Erst-Deploy, wenn im Webroot noch keine `events.json` existiert, wird die gebaute Datei einmalig kopiert. Danach werden beide Dateien ausschliesslich vom nächtlichen Job gepflegt. Für sofort aktuelle Termine `make nightly` (bzw. `scripts/nightly_update.sh`) ausführen.
+
 ### Systemd-Timer statt Cron (empfohlen)
 
 Dateien:
