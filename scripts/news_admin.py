@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_NEWS_FILE = os.path.join(BASE_DIR, "static", "news.json")
 DEFAULT_TEMPLATES_FILE = os.path.join(BASE_DIR, "static", "news_templates.json")
+NEWS_RENDER_JS = os.path.join(BASE_DIR, "static", "js", "news-render.js")
 DEFAULT_DEPLOY_DIR = "/var/www/ohmoors.de/html"
 DEFAULT_BACKUP_DIR = os.path.join(BASE_DIR, "backups")
 DEFAULT_BACKUP_KEEP = 20
@@ -663,8 +664,22 @@ HTML_PAGE = r"""<!doctype html>
       </div>
     </template>
 
+    <script src="news-render.js"></script>
     <script>
       (function () {
+        var shared = window.OhmoorsNews;
+        var escapeHtml = shared.escapeHtml;
+        var sanitizeUrl = shared.sanitizeUrl;
+        var parsePublicationDateKey = shared.parsePublicationDateKey;
+        var getBerlinTodayKey = shared.getBerlinTodayKey;
+        var isLegacyDraftValue = shared.isLegacyDraftValue;
+        var isFeaturedValue = shared.isFeaturedValue;
+
+        // Vorschau wie auf der Website; Links oeffnen im Admin in einem neuen Tab.
+        function renderMarkdown(value) {
+          return shared.renderMarkdown(value, { externalLinks: true });
+        }
+
         var newsNavEl = document.getElementById("news-nav");
         var templateNavEl = document.getElementById("template-nav");
         var newsCountEl = document.getElementById("news-count");
@@ -710,75 +725,8 @@ HTML_PAGE = r"""<!doctype html>
           });
         }
 
-        function pad2(value) {
-          return String(value).padStart(2, "0");
-        }
-
-        function isLegacyDraftValue(value) {
-          if (value === false) {
-            return true;
-          }
-
-          if (typeof value === "string") {
-            return /^(false|0|no|nein|off)$/i.test(value.trim());
-          }
-
-          return false;
-        }
-
-        function isFeaturedValue(value) {
-          if (value === true) {
-            return true;
-          }
-
-          if (typeof value === "string") {
-            return /^(true|1|yes|ja|on)$/i.test(value.trim());
-          }
-
-          return false;
-        }
-
-        function parsePublicationDateKey(value) {
-          var text = String(value || "").trim();
-          var match;
-
-          if (!text) {
-            return "";
-          }
-
-          match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
-          if (match) {
-            return match[1] + "-" + match[2] + "-" + match[3];
-          }
-
-          match = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(text);
-          if (match) {
-            return match[3] + "-" + pad2(match[2]) + "-" + pad2(match[1]);
-          }
-
-          return "";
-        }
-
         function toDateInputValue(value) {
           return parsePublicationDateKey(value);
-        }
-
-        function getBerlinTodayKey() {
-          var parts = new Intl.DateTimeFormat("en-CA", {
-            timeZone: "Europe/Berlin",
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          }).formatToParts(new Date());
-          var values = {};
-
-          parts.forEach(function (part) {
-            if (part.type !== "literal") {
-              values[part.type] = part.value;
-            }
-          });
-
-          return values.year + "-" + values.month + "-" + values.day;
         }
 
         function getPublicationState(fromValue, untilValue, legacyDraft) {
@@ -811,163 +759,6 @@ HTML_PAGE = r"""<!doctype html>
           statusEl.className = "status " + (isError ? "" : "muted");
           if (isError) statusEl.style.color = "#b91c1c";
           else statusEl.style.color = "";
-        }
-
-        function escapeHtml(value) {
-          return String(value || "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/\"/g, "&quot;")
-            .replace(/'/g, "&#39;");
-        }
-
-        function unescapeHtml(value) {
-          return String(value || "")
-            .replace(/&lt;/g, "<")
-            .replace(/&gt;/g, ">")
-            .replace(/&quot;/g, "\"")
-            .replace(/&#39;/g, "'")
-            .replace(/&amp;/g, "&");
-        }
-
-        function sanitizeUrl(value) {
-          var url = String(value || "").trim();
-
-          if (!url) {
-            return "";
-          }
-
-          if (
-            /^(https?:|mailto:|tel:)/i.test(url) ||
-            /^[./#?]/.test(url) ||
-            !/^[a-z][a-z0-9+.-]*:/i.test(url)
-          ) {
-            return url;
-          }
-
-          return "";
-        }
-
-        function restorePlaceholders(text, placeholders) {
-          return text.replace(/\u0000(\d+)\u0000/g, function (_, index) {
-            return placeholders[Number(index)] || "";
-          });
-        }
-
-        function renderInlineMarkdown(value) {
-          var placeholders = [];
-          var text = escapeHtml(value);
-
-          function stash(html) {
-            placeholders.push(html);
-            return "\u0000" + (placeholders.length - 1) + "\u0000";
-          }
-
-          text = text.replace(/`([^`]+)`/g, function (_, code) {
-            return stash("<code>" + code + "</code>");
-          });
-
-          text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (_, label, url) {
-            var safeUrl = sanitizeUrl(unescapeHtml(url));
-            if (!safeUrl) {
-              return label;
-            }
-
-            return stash(
-              '<a href="' +
-                escapeHtml(safeUrl) +
-                '" target="_blank" rel="noopener noreferrer">' +
-                label +
-                "</a>"
-            );
-          });
-
-          text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-          text = text.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-
-          return restorePlaceholders(text, placeholders);
-        }
-
-        function renderMarkdown(value) {
-          var lines = String(value || "").replace(/\r\n?/g, "\n").split("\n");
-          var html = [];
-          var paragraph = [];
-          var listType = null;
-          var listItems = [];
-
-          function flushParagraph() {
-            if (!paragraph.length) {
-              return;
-            }
-
-            html.push("<p>" + renderInlineMarkdown(paragraph.join(" ")) + "</p>");
-            paragraph = [];
-          }
-
-          function flushList() {
-            if (!listType || !listItems.length) {
-              listType = null;
-              listItems = [];
-              return;
-            }
-
-            html.push(
-              "<" +
-                listType +
-                ">" +
-                listItems
-                  .map(function (item) {
-                    return "<li>" + renderInlineMarkdown(item) + "</li>";
-                  })
-                  .join("") +
-                "</" +
-                listType +
-                ">"
-            );
-            listType = null;
-            listItems = [];
-          }
-
-          lines.forEach(function (line) {
-            var trimmed = line.trim();
-            var unorderedMatch = /^[-*+]\s+(.+)$/.exec(trimmed);
-            var orderedMatch = /^(\d+)\.\s+(.+)$/.exec(trimmed);
-
-            if (!trimmed) {
-              flushParagraph();
-              flushList();
-              return;
-            }
-
-            if (unorderedMatch) {
-              flushParagraph();
-              if (listType !== "ul") {
-                flushList();
-                listType = "ul";
-              }
-              listItems.push(unorderedMatch[1]);
-              return;
-            }
-
-            if (orderedMatch) {
-              flushParagraph();
-              if (listType !== "ol") {
-                flushList();
-                listType = "ol";
-              }
-              listItems.push(orderedMatch[2]);
-              return;
-            }
-
-            flushList();
-            paragraph.push(trimmed);
-          });
-
-          flushParagraph();
-          flushList();
-
-          return html.join("") || "<p class='muted'>Keine Vorschau vorhanden.</p>";
         }
 
         function cloneItem(item) {
@@ -1657,6 +1448,21 @@ def deploy_news(news_path, deploy_dir):
 
 class NewsHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path == "/news-render.js":
+            try:
+                with open(NEWS_RENDER_JS, "rb") as handle:
+                    payload = handle.read()
+            except OSError:
+                self.send_response(404)
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+
         if self.path in ("/", "/index.html"):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
