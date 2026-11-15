@@ -184,9 +184,19 @@
                 return "";
               }
 
-              var dateLine = noDance
-                ? formatDateDe(startLocal)
-                : formatDateDe(startLocal) + " | " + formatTime(startLocal) + "-" + formatTime(endLocal);
+              var dateLine;
+              if (event.all_day) {
+                var dayStart = new Date(event.date + "T12:00:00Z");
+                var dayEnd = new Date((event.end_date || event.date) + "T12:00:00Z");
+                dateLine = formatDateDe(dayStart);
+                if (!Number.isNaN(dayEnd.getTime()) && event.end_date && event.end_date > event.date) {
+                  dateLine += "–" + formatDateDe(dayEnd);
+                }
+              } else {
+                dateLine = noDance
+                  ? formatDateDe(startLocal)
+                  : formatDateDe(startLocal) + " | " + formatTime(startLocal) + "-" + formatTime(endLocal);
+              }
 
               return (
                 '<tr' +

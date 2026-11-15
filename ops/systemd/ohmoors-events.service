@@ -10,6 +10,9 @@ WorkingDirectory=/Users/lj/website
 Environment=PROJECT_ROOT=/Users/lj/website
 Environment=DEPLOY_DIR=/var/www/ohmoors.de/html
 Environment=LOCK_FILE=/tmp/ohmoors-events.lock
+# Enthält OHMOORS_CALENDAR_URL=... (Kalender-Feed-URL mit Freigabe-Token).
+# Datei root-owned, Rechte 0600; nicht ins Repo einchecken.
+EnvironmentFile=/etc/ohmoors/events.env
 ExecStart=/Users/lj/website/scripts/nightly_update.sh
 StandardOutput=journal
 StandardError=journal
