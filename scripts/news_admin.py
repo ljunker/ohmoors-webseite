@@ -820,6 +820,15 @@ HTML_PAGE = r"""<!doctype html>
             .replace(/'/g, "&#39;");
         }
 
+        function unescapeHtml(value) {
+          return String(value || "")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, "\"")
+            .replace(/&#39;/g, "'")
+            .replace(/&amp;/g, "&");
+        }
+
         function sanitizeUrl(value) {
           var url = String(value || "").trim();
 
@@ -858,7 +867,7 @@ HTML_PAGE = r"""<!doctype html>
           });
 
           text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (_, label, url) {
-            var safeUrl = sanitizeUrl(url);
+            var safeUrl = sanitizeUrl(unescapeHtml(url));
             if (!safeUrl) {
               return label;
             }
