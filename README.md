@@ -48,8 +48,9 @@ Hinweis: Der alte Freigabelink steht noch in der Git-History. Den Freigabelink i
 
 `schedule.html` liest Termine clientseitig aus `events.json` (im Site-Root).
 `news.html` liest News clientseitig aus `news.json` (im Site-Root).
-`make build` erzeugt außerdem `sitemap.xml` (alle Seiten außer `gallery.html`, siehe `SITEMAP_EXCLUDE` in `build_pages.py`).
+`make build` erzeugt außerdem `sitemap.xml` (alle Seiten außer den in `SITEMAP_EXCLUDE` genannten (`gallery.html`, `caller-class.html`), siehe `SITEMAP_EXCLUDE` in `build_pages.py`).
 `gallery.html` liest Bilder clientseitig aus `gallery-pics/gallery.json` (wird beim Build automatisch aus `static/gallery-pics` erzeugt).
+`caller-class.html` ist eine kompakte, nirgends verlinkte Caller-Ansicht des Class-Fortschritts (ohne Nav/Footer, `noindex`), erreichbar unter `/caller-class.html`.
 
 ## News verwalten (CRUD)
 
