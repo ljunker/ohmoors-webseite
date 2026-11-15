@@ -9,9 +9,17 @@ GALLERY_MANIFEST_SCRIPT := scripts/build_gallery_manifest.py
 GALLERY_PICS_DIR := $(STATIC_DIR)/gallery-pics
 GALLERY_MANIFEST := $(SITE_DIR)/gallery-pics/gallery.json
 
-.PHONY: all build copy_static copy_events_json copy_gallery_manifest clean serve deploy nightly update_events
+.PHONY: all build copy_static copy_events_json copy_gallery_manifest clean serve deploy nightly update_events venv
 
 all: build
+
+# Legt .venv an und installiert requirements.txt; läuft erneut, wenn sich requirements.txt ändert.
+venv: $(PYTHON)
+
+$(PYTHON): requirements.txt
+	@test -d .venv || python3 -m venv .venv
+	@.venv/bin/pip install -r requirements.txt
+	@touch $(PYTHON)
 
 build: copy_static copy_events_json copy_gallery_manifest build_pages
 

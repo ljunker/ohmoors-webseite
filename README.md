@@ -4,6 +4,18 @@ Statische Website mit Build nach `_site`.
 
 ## Lokal
 
+### Setup
+
+Benötigt Python 3 mit `venv`-Modul. Einmalig die virtuelle Umgebung anlegen:
+
+```bash
+make venv
+# alternativ manuell:
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+```
+
+Nach Änderungen an `requirements.txt` erneut `make venv` ausführen.
+
 ```bash
 make update_events   # holt neue Termine und schreibt events.json
 make build           # baut die Seite nach _site
