@@ -140,22 +140,27 @@ Wichtig:
 
 ## Server-Update nur fuer Events
 
-Script: `scripts/events-update-server.sh`
+Script: `scripts/nightly_update.sh`
 
-Standardpfade im Script:
-- Projekt: `~/website`
+Standardpfade (per Umgebungsvariable ueberschreibbar):
+- Projekt: Repo-Root des Scripts (auf dem Server `/home/lars/ohmoors-webseite`)
 - Deploy: `/var/www/ohmoors.de/html`
+
+Benoetigt `OHMOORS_CALENDAR_URL` (Kalender-Feed-URL), auf dem Server aus `/etc/ohmoors/events.env`.
 
 Aufruf auf dem Server:
 
 ```bash
-~/website/scripts/events-update-server.sh
+cd /home/lars/ohmoors-webseite
+make nightly
+# oder direkt:
+scripts/nightly_update.sh
 ```
 
 Optional mit abweichenden Pfaden:
 
 ```bash
-PROJECT_ROOT=/pfad/zum/projekt DEPLOY_DIR=/pfad/zum/webroot ~/website/scripts/events-update-server.sh
+OHMOORS_CALENDAR_URL=... PROJECT_ROOT=/pfad/zum/projekt DEPLOY_DIR=/pfad/zum/webroot scripts/nightly_update.sh
 ```
 
 ## Serverbetrieb (Debian 13 + Nginx)
@@ -165,7 +170,8 @@ Empfohlener Runtime-Job fuer Event-Updates: `scripts/nightly_update.sh`.
 Unterstuetzte Variablen:
 - `PROJECT_ROOT` (Default: Repo-Root)
 - `DEPLOY_DIR` (Default: `/var/www/ohmoors.de/html`)
-- `LOCK_FILE` (Default: `/tmp/ohmoors-events.lock`)
+- `LOCK_FILE` (Default: `/tmp/ohmoors-events.lock`; die systemd-Unit setzt `/run/ohmoors-events/update.lock`)
+- `OHMOORS_CALENDAR_URL` (Pflicht, Kalender-Feed-URL)
 
 Das Script:
 - verhindert Parallelstarts via `flock`
@@ -194,7 +200,18 @@ sudo systemctl start ohmoors-events.service
 sudo journalctl -u ohmoors-events.service -n 100 --no-pager
 ```
 
-Legacy-Cron liegt in `ops/ohmoors-nightly.cron`, sollte aber deaktiviert bleiben, wenn der Timer aktiv ist.
+Die Unit laeuft als `User=lars`/`Group=lars` mit Checkout `/home/lars/ohmoors-webseite` und eigenem Lock unter `/run/ohmoors-events/`. Es gibt keinen Cron-Job mehr; der Timer ist der einzige Scheduler.
+
+Migration bestehender Installationen (Dienst lief bisher als root bzw. mit falschen Pfaden):
+
+```bash
+sudo install -m 0644 ops/systemd/ohmoors-events.service /etc/systemd/system/ohmoors-events.service
+sudo systemctl daemon-reload
+sudo chown lars:lars /var/www/ohmoors.de/html/events.json /var/www/ohmoors.de/html/events.json.last-good  # falls vorhanden
+sudo rm -f /tmp/ohmoors-events.lock
+sudo crontab -l   # evtl. noch aktiven Root-Cron-Eintrag fuer nightly_update.sh mit `sudo crontab -e` entfernen
+sudo systemctl start ohmoors-events.service
+```
 
 ### Nginx-Rollout
 
