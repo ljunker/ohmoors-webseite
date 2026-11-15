@@ -169,6 +169,7 @@ Die Repo-Datei `ohmoor-squeezers.de` nutzt:
 - Canonical Redirect `www -> ohmoor-squeezers.de`
 - `events.json` ohne Cache
 - Security-/Cache-/Deny-Regeln ueber Snippets in `ops/nginx/snippets/*.conf`
+- Hinweis: nginx vererbt `add_header` nur an Locations ohne eigenes `add_header`; Locations mit eigenem `add_header` (Asset-Cache, `events.json`) binden `ohmoors-security.conf` deshalb selbst ein. Das Deny-Snippet muss vor dem Cache-Snippet stehen (Regex-Locations: erster Treffer gewinnt).
 
 Beispiel-Deployment:
 
